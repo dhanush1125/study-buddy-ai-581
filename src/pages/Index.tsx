@@ -1,25 +1,14 @@
 import { useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useChat } from "@/hooks/useChat";
-import { useAuth } from "@/hooks/useAuth";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { WelcomeMessage } from "@/components/WelcomeMessage";
-import { BookOpen, Trash2, LogOut, Loader2 } from "lucide-react";
+import { BookOpen, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 
 const Index = () => {
   const { messages, isLoading, sendMessage, stopGeneration, clearChat } = useChat();
-  const { user, loading, signOut } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth", { replace: true });
-    }
-  }, [user, loading, navigate]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -38,27 +27,6 @@ const Index = () => {
     return () => window.removeEventListener("suggestion-click", handleSuggestion as EventListener);
   }, [sendMessage]);
 
-  const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (error) {
-      toast.error("Failed to sign out");
-    } else {
-      toast.success("Signed out successfully");
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
@@ -74,28 +42,17 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            {messages.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearChat}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="w-4 h-4 mr-1" />
-                Clear
-              </Button>
-            )}
+          {messages.length > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleSignOut}
-              className="text-muted-foreground hover:text-foreground"
+              onClick={clearChat}
+              className="text-muted-foreground hover:text-destructive"
             >
-              <LogOut className="w-4 h-4 mr-1" />
-              Sign Out
+              <Trash2 className="w-4 h-4 mr-1" />
+              Clear
             </Button>
-          </div>
+          )}
         </div>
       </header>
 

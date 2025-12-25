@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 export type Message = {
   role: "user" | "assistant";
@@ -8,7 +7,6 @@ export type Message = {
 };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
-const MAX_MESSAGE_LENGTH = 4000;
 
 export const useChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -18,12 +16,6 @@ export const useChat = () => {
   const sendMessage = useCallback(async (input: string) => {
     if (!input.trim() || isLoading) return;
 
-    // Client-side validation
-    if (input.length > MAX_MESSAGE_LENGTH) {
-      toast.error(`Message too long. Maximum ${MAX_MESSAGE_LENGTH} characters.`);
-      return;
-    }
-
     const userMessage: Message = { role: "user", content: input.trim() };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
@@ -32,20 +24,11 @@ export const useChat = () => {
     abortControllerRef.current = new AbortController();
 
     try {
-      // Get the current session for authentication
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.access_token) {
-        toast.error("Please sign in to continue");
-        setIsLoading(false);
-        return;
-      }
-
       const response = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ message: input.trim() }),
         signal: abortControllerRef.current.signal,
@@ -54,11 +37,7 @@ export const useChat = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 401) {
-          toast.error("Session expired. Please sign in again.");
-        } else {
-          toast.error(data.error || data.reply || "Failed to get response");
-        }
+        toast.error(data.reply || "Failed to get response");
         setIsLoading(false);
         return;
       }
