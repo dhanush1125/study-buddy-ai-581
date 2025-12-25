@@ -31,70 +31,19 @@ export const useChat = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ message: input.trim() }),
         signal: abortControllerRef.current.signal,
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 429) {
-          toast.error("Rate limit reached. Please wait a moment and try again.");
-        } else if (response.status === 402) {
-          toast.error("Usage limit reached. Please check your account.");
-        } else {
-          toast.error(errorData.error || "Failed to get response");
-        }
+        toast.error(data.reply || "Failed to get response");
         setIsLoading(false);
         return;
       }
 
-      if (!response.body) {
-        throw new Error("No response body");
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      // Add empty assistant message to start streaming into
-      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              assistantContent += content;
-              setMessages((prev) =>
-                prev.map((msg, i) =>
-                  i === prev.length - 1 ? { ...msg, content: assistantContent } : msg
-                )
-              );
-            }
-          } catch {
-            // Incomplete JSON, put back and wait for more
-            buffer = line + "\n" + buffer;
-            break;
-          }
-        }
-      }
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
     } catch (error) {
       if ((error as Error).name === "AbortError") {
         console.log("Request aborted");
