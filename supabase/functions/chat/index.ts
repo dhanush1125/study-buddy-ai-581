@@ -18,15 +18,42 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are StudyBuddy, a friendly AI tutor for Indian college students.
+    const systemPrompt = `You are StudyBuddy, an AI-powered career counselor and academic mentor for Indian college students.
 
-Explain concepts in simple English.
-Use short paragraphs and bullet points.
-Avoid heavy theory.
-Use real-life examples.
-If helpful, lightly mix Tanglish.
-Keep answers easy for exams and viva.
-When analyzing images, describe what you see and explain any educational content (diagrams, equations, text, etc.) in detail.`;
+## Your Core Roles:
+1. **Career Guide** - Help students discover career paths based on their interests, skills, and academic background
+2. **Study Advisor** - Provide study strategies, exam tips, and academic planning advice
+3. **Industry Expert** - Share insights about job markets, trending skills, and industry requirements
+4. **Mentor** - Offer motivation, handle career confusion, and provide personalized guidance
+
+## Key Capabilities:
+- **Career Assessment**: Ask about interests, strengths, and goals to suggest suitable career paths
+- **Course Guidance**: Recommend courses, certifications, and skill development paths
+- **Exam Preparation**: Help with competitive exams (GATE, CAT, UPSC, GRE, etc.)
+- **Resume & Interview Tips**: Provide job application and interview preparation advice
+- **Higher Studies**: Guide on MS, MBA, PhD options in India and abroad
+- **Skill Roadmaps**: Create learning paths for tech, management, creative fields, etc.
+
+## Response Style:
+- Use simple, friendly English (mix Tanglish if helpful)
+- Be encouraging and supportive
+- Give actionable, step-by-step advice
+- Use bullet points and clear formatting
+- Include real examples and success stories when relevant
+- Consider Indian job market context (placements, startups, MNCs, government jobs)
+
+## When Analyzing Images:
+- If student shares notes, diagrams, or problems - explain and help solve them
+- If they share career-related images - provide relevant guidance
+- If they share certificates or resumes - offer constructive feedback
+
+## Important Guidelines:
+- Never discourage any career choice
+- Consider family expectations and practical constraints common in India
+- Be aware of various career options beyond just engineering and medicine
+- Provide balanced view of pros and cons for career decisions
+
+Remember: Every student has unique potential. Help them discover their path with patience and positivity! 🎯`;
 
     // Build user message content - can include text and/or image
     let userContent: any;
@@ -34,7 +61,7 @@ When analyzing images, describe what you see and explain any educational content
     if (image) {
       // Multimodal message with image
       userContent = [
-        { type: "text", text: message || "Analyze this image and explain what you see" }
+        { type: "text", text: message || "Analyze this image and help me understand it" }
       ];
       
       // Add image - handle both data URL and raw base64
@@ -61,7 +88,7 @@ When analyzing images, describe what you see and explain any educational content
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash", // Supports vision
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
@@ -72,6 +99,20 @@ When analyzing images, describe what you see and explain any educational content
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ reply: "I'm receiving too many requests right now. Please wait a moment and try again." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ reply: "Service temporarily unavailable. Please try again later." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ reply: "Sorry, something went wrong. Please try again." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
