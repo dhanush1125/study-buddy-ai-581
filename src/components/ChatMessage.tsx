@@ -31,6 +31,15 @@ export const ChatMessage = ({ message, isLatest }: ChatMessageProps) => {
             : "bg-ai-bubble text-ai-bubble-foreground rounded-bl-md"
         )}
       >
+        {/* Show image if present */}
+        {isUser && message.image && (
+          <img
+            src={message.image}
+            alt="Uploaded"
+            className="max-w-full h-auto max-h-48 rounded-lg mb-2 object-contain"
+          />
+        )}
+        
         <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
           {message.content}
           {!isUser && isLatest && message.content === "" && (
