@@ -38,7 +38,7 @@ const Index = () => {
             </div>
             <div>
               <h1 className="text-lg font-semibold text-foreground">StudyBuddy</h1>
-              <p className="text-xs text-muted-foreground">Your AI study assistant</p>
+              <p className="text-xs text-muted-foreground">Your AI Career Guide & Study Mentor</p>
             </div>
           </div>
           
