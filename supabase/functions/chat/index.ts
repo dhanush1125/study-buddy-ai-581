@@ -53,18 +53,16 @@ serve(async (req) => {
 - Be aware of various career options beyond just engineering and medicine
 - Provide balanced view of pros and cons for career decisions
 
-Remember: Every student has unique potential. Help them discover their path with patience and positivity! 🎯`;
+Remember: Every student has unique potential. Help them discover their path with patience and positivity!`;
 
     // Build user message content - can include text and/or image
     let userContent: any;
     
     if (image) {
-      // Multimodal message with image
       userContent = [
         { type: "text", text: message || "Analyze this image and help me understand it" }
       ];
       
-      // Add image - handle both data URL and raw base64
       if (image.startsWith("data:")) {
         userContent.push({
           type: "image_url",
@@ -77,9 +75,10 @@ Remember: Every student has unique potential. Help them discover their path with
         });
       }
     } else {
-      // Text-only message
       userContent = message;
     }
+
+    console.log("Sending request to AI gateway with streaming enabled");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -93,6 +92,7 @@ Remember: Every student has unique potential. Help them discover their path with
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
         ],
+        stream: true,
       }),
     });
 
@@ -102,30 +102,27 @@ Remember: Every student has unique potential. Help them discover their path with
       
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ reply: "I'm receiving too many requests right now. Please wait a moment and try again." }),
+          JSON.stringify({ error: "Rate limits exceeded, please try again later." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ reply: "Service temporarily unavailable. Please try again later." }),
+          JSON.stringify({ error: "Payment required, please add funds." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
       return new Response(
-        JSON.stringify({ reply: "Sorry, something went wrong. Please try again." }),
+        JSON.stringify({ error: "AI gateway error" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const data = await response.json();
-    const reply = data.choices[0]?.message?.content || "I couldn't generate a response.";
-
-    return new Response(
-      JSON.stringify({ reply }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // Stream the response back to the client
+    return new Response(response.body, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    });
   } catch (error) {
     console.error("Chat function error:", error);
     return new Response(
