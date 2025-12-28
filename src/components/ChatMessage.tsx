@@ -3,6 +3,8 @@ import { BookOpen, User } from "lucide-react";
 import type { Message } from "@/hooks/useChat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface ChatMessageProps {
   message: Message;
@@ -47,7 +49,7 @@ export const ChatMessage = ({ message, isLatest }: ChatMessageProps) => {
             {message.content}
           </p>
         ) : (
-          <div className="text-[15px] leading-relaxed break-words prose prose-sm max-w-none prose-headings:text-ai-bubble-foreground prose-p:text-ai-bubble-foreground prose-strong:text-ai-bubble-foreground prose-code:text-ai-bubble-foreground prose-li:text-ai-bubble-foreground prose-a:text-primary prose-pre:bg-background/20 prose-pre:rounded-lg prose-code:bg-background/20 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
+          <div className="text-[15px] leading-relaxed break-words prose prose-sm max-w-none prose-headings:text-ai-bubble-foreground prose-p:text-ai-bubble-foreground prose-strong:text-ai-bubble-foreground prose-code:text-ai-bubble-foreground prose-li:text-ai-bubble-foreground prose-a:text-primary prose-pre:p-0 prose-pre:bg-transparent prose-code:before:content-none prose-code:after:content-none">
             {message.content === "" && isLatest ? (
               <span className="inline-flex gap-1">
                 <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce-dot" />
@@ -55,7 +57,41 @@ export const ChatMessage = ({ message, isLatest }: ChatMessageProps) => {
                 <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce-dot" />
               </span>
             ) : (
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  code({ node, className, children, ...props }) {
+                    const match = /language-(\w+)/.exec(className || "");
+                    const isInline = !match && !className;
+                    
+                    if (isInline) {
+                      return (
+                        <code
+                          className="bg-background/30 px-1.5 py-0.5 rounded text-sm font-mono"
+                          {...props}
+                        >
+                          {children}
+                        </code>
+                      );
+                    }
+                    
+                    return (
+                      <SyntaxHighlighter
+                        style={oneDark}
+                        language={match ? match[1] : "text"}
+                        PreTag="div"
+                        customStyle={{
+                          margin: 0,
+                          borderRadius: "0.5rem",
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        {String(children).replace(/\n$/, "")}
+                      </SyntaxHighlighter>
+                    );
+                  },
+                }}
+              >
                 {message.content}
               </ReactMarkdown>
             )}
