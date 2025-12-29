@@ -73,6 +73,69 @@ export type Database = {
           },
         ]
       }
+      quiz_attempts: {
+        Row: {
+          attempted_at: string
+          id: string
+          percentage: number
+          score: number
+          subject: string
+          topic_name: string
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          id?: string
+          percentage: number
+          score: number
+          subject: string
+          topic_name: string
+          total_questions: number
+          user_id: string
+        }
+        Update: {
+          attempted_at?: string
+          id?: string
+          percentage?: number
+          score?: number
+          subject?: string
+          topic_name?: string
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      student_topics: {
+        Row: {
+          completed_at: string
+          difficulty: string
+          id: string
+          notes: string | null
+          subject: string
+          topic_name: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          difficulty?: string
+          id?: string
+          notes?: string | null
+          subject: string
+          topic_name: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          difficulty?: string
+          id?: string
+          notes?: string | null
+          subject?: string
+          topic_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

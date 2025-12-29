@@ -7,7 +7,8 @@ import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { WelcomeMessage } from "@/components/WelcomeMessage";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
-import { BookOpen, Menu, X } from "lucide-react";
+import { ProgressTracker } from "@/components/ProgressTracker";
+import { BookOpen, Menu, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
@@ -15,7 +16,7 @@ const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+  const [progressOpen, setProgressOpen] = useState(false);
   const {
     conversations,
     loading: conversationsLoading,
@@ -145,6 +146,17 @@ const Index = () => {
                 <p className="text-xs text-muted-foreground">Your AI Career Guide & Study Mentor</p>
               </div>
             </div>
+            <div className="ml-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setProgressOpen(true)}
+                className="gap-2"
+              >
+                <TrendingUp className="w-4 h-4" />
+                <span className="hidden sm:inline">Progress</span>
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -186,6 +198,9 @@ const Index = () => {
           </div>
         </footer>
       </div>
+
+      {/* Progress Tracker Modal */}
+      <ProgressTracker isOpen={progressOpen} onClose={() => setProgressOpen(false)} />
     </div>
   );
 };
