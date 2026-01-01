@@ -8,9 +8,52 @@ export type Message = {
   role: "user" | "assistant";
   content: string;
   image?: string;
+  generatedImages?: string[]; // For AI-generated images
 };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+const IMAGE_GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
+
+// Helper to extract image generation requests from content
+const extractImageRequests = (content: string): { prompts: string[]; cleanContent: string } => {
+  const regex = /\[GENERATE_IMAGE:\s*([^\]]+)\]/g;
+  const prompts: string[] = [];
+  let match;
+  
+  while ((match = regex.exec(content)) !== null) {
+    prompts.push(match[1].trim());
+  }
+  
+  // Replace the markers with a placeholder for rendering
+  const cleanContent = content.replace(regex, '\n\n🖼️ *Generating educational image...*\n\n');
+  
+  return { prompts, cleanContent };
+};
+
+// Generate an image using the edge function
+const generateImage = async (prompt: string): Promise<string | null> => {
+  try {
+    const response = await fetch(IMAGE_GEN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    if (!response.ok) {
+      console.error("Image generation failed:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.imageUrl || null;
+  } catch (error) {
+    console.error("Image generation error:", error);
+    return null;
+  }
+};
 
 export const useChat = (conversationId: string | null) => {
   const { user } = useAuth();
@@ -245,6 +288,76 @@ export const useChat = (conversationId: string | null) => {
             } catch {
               /* ignore */
             }
+          }
+        }
+
+        // Check for image generation requests after streaming is complete
+        const { prompts, cleanContent } = extractImageRequests(assistantContent);
+        
+        if (prompts.length > 0) {
+          // Update content to show loading state
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            if (lastMessage?.role === "assistant") {
+              newMessages[newMessages.length - 1] = {
+                ...lastMessage,
+                content: cleanContent,
+              };
+            }
+            return newMessages;
+          });
+
+          // Generate images (only first one to avoid overload)
+          const generatedImages: string[] = [];
+          for (const prompt of prompts.slice(0, 1)) {
+            const imageUrl = await generateImage(prompt);
+            if (imageUrl) {
+              generatedImages.push(imageUrl);
+            }
+          }
+
+          // Update message with generated images
+          if (generatedImages.length > 0) {
+            const finalContent = cleanContent.replace(
+              '🖼️ *Generating educational image...*',
+              '🖼️ *Educational diagram generated:*'
+            );
+            
+            setMessages((prev) => {
+              const newMessages = [...prev];
+              const lastMessage = newMessages[newMessages.length - 1];
+              if (lastMessage?.role === "assistant") {
+                newMessages[newMessages.length - 1] = {
+                  ...lastMessage,
+                  content: finalContent,
+                  generatedImages,
+                };
+              }
+              return newMessages;
+            });
+            
+            assistantContent = finalContent;
+          } else {
+            // Image generation failed, update content
+            const finalContent = cleanContent.replace(
+              '🖼️ *Generating educational image...*',
+              '🖼️ *[Image generation unavailable - here\'s the concept in text form]*'
+            );
+            
+            setMessages((prev) => {
+              const newMessages = [...prev];
+              const lastMessage = newMessages[newMessages.length - 1];
+              if (lastMessage?.role === "assistant") {
+                newMessages[newMessages.length - 1] = {
+                  ...lastMessage,
+                  content: finalContent,
+                };
+              }
+              return newMessages;
+            });
+            
+            assistantContent = finalContent;
           }
         }
 

@@ -57,43 +57,61 @@ export const ChatMessage = ({ message, isLatest }: ChatMessageProps) => {
                 <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce-dot" />
               </span>
             ) : (
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  code({ node, className, children, ...props }) {
-                    const match = /language-(\w+)/.exec(className || "");
-                    const isInline = !match && !className;
-                    
-                    if (isInline) {
+              <>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    code({ node, className, children, ...props }) {
+                      const match = /language-(\w+)/.exec(className || "");
+                      const isInline = !match && !className;
+                      
+                      if (isInline) {
+                        return (
+                          <code
+                            className="bg-background/30 px-1.5 py-0.5 rounded text-sm font-mono"
+                            {...props}
+                          >
+                            {children}
+                          </code>
+                        );
+                      }
+                      
                       return (
-                        <code
-                          className="bg-background/30 px-1.5 py-0.5 rounded text-sm font-mono"
-                          {...props}
+                        <SyntaxHighlighter
+                          style={oneDark}
+                          language={match ? match[1] : "text"}
+                          PreTag="div"
+                          customStyle={{
+                            margin: 0,
+                            borderRadius: "0.5rem",
+                            fontSize: "0.875rem",
+                          }}
                         >
-                          {children}
-                        </code>
+                          {String(children).replace(/\n$/, "")}
+                        </SyntaxHighlighter>
                       );
-                    }
-                    
-                    return (
-                      <SyntaxHighlighter
-                        style={oneDark}
-                        language={match ? match[1] : "text"}
-                        PreTag="div"
-                        customStyle={{
-                          margin: 0,
-                          borderRadius: "0.5rem",
-                          fontSize: "0.875rem",
-                        }}
-                      >
-                        {String(children).replace(/\n$/, "")}
-                      </SyntaxHighlighter>
-                    );
-                  },
-                }}
-              >
-                {message.content}
-              </ReactMarkdown>
+                    },
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+                
+                {/* Render AI-generated images */}
+                {message.generatedImages && message.generatedImages.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {message.generatedImages.map((imgUrl, idx) => (
+                      <div key={idx} className="rounded-lg overflow-hidden border border-border/50 bg-background/50">
+                        <img
+                          src={imgUrl}
+                          alt={`AI-generated educational diagram ${idx + 1}`}
+                          className="w-full h-auto max-h-96 object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
