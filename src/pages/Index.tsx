@@ -8,7 +8,8 @@ import { ChatInput } from "@/components/ChatInput";
 import { WelcomeMessage } from "@/components/WelcomeMessage";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { ProgressTracker } from "@/components/ProgressTracker";
-import { BookOpen, Menu, TrendingUp } from "lucide-react";
+import { QuickRevisionDialog } from "@/components/QuickRevisionDialog";
+import { BookOpen, Menu, TrendingUp, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
@@ -17,6 +18,7 @@ const Index = () => {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
+  const [revisionOpen, setRevisionOpen] = useState(false);
   const {
     conversations,
     loading: conversationsLoading,
@@ -86,6 +88,17 @@ const Index = () => {
     }
   };
 
+  const handleQuickRevision = (topic: string, timeframe: string) => {
+    const timeframeText = timeframe === "hours" ? "in a few hours" : timeframe === "tomorrow" ? "tomorrow" : "in a few days";
+    const revisionPrompt = `🎯 QUICK REVISION MODE: My exam is ${timeframeText}. Help me revise "${topic}" quickly with:
+- Only high-priority points
+- Memory tricks and mnemonics
+- Key diagrams
+- Common exam questions
+Keep it stress-free and focused!`;
+    handleSendMessage(revisionPrompt);
+  };
+
   if (authLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
@@ -146,7 +159,16 @@ const Index = () => {
                 <p className="text-xs text-muted-foreground">Your AI Career Guide & Study Mentor</p>
               </div>
             </div>
-            <div className="ml-auto">
+            <div className="ml-auto flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRevisionOpen(true)}
+                className="gap-2 bg-yellow-500/10 border-yellow-500/30 hover:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+              >
+                <Zap className="w-4 h-4" />
+                <span className="hidden sm:inline">Quick Revision</span>
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -201,6 +223,13 @@ const Index = () => {
 
       {/* Progress Tracker Modal */}
       <ProgressTracker isOpen={progressOpen} onClose={() => setProgressOpen(false)} />
+
+      {/* Quick Revision Dialog */}
+      <QuickRevisionDialog
+        isOpen={revisionOpen}
+        onClose={() => setRevisionOpen(false)}
+        onStartRevision={handleQuickRevision}
+      />
     </div>
   );
 };
