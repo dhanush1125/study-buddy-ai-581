@@ -14,7 +14,16 @@ interface ChatMessageProps {
 
 export const ChatMessage = ({ message, isLatest, isGeneratingImage }: ChatMessageProps) => {
   const isUser = message.role === "user";
-  const showImageLoader = isLatest && isGeneratingImage && message.content.includes('Generating educational image');
+  const showImageLoader = isLatest && isGeneratingImage && message.content.includes('Generating');
+  
+  // Extract style from loading message for display
+  const getImageStyle = () => {
+    if (message.content.includes('realistic')) return { label: 'realistic image', emoji: '📸' };
+    if (message.content.includes('3d')) return { label: '3D render', emoji: '🧊' };
+    if (message.content.includes('anime')) return { label: 'anime illustration', emoji: '🎌' };
+    return { label: 'diagram', emoji: '📘' };
+  };
+  const imageStyle = getImageStyle();
 
   return (
     <div
@@ -106,8 +115,10 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage }: ChatMessag
                         <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-foreground">Generating diagram...</p>
-                        <p className="text-xs text-muted-foreground">Creating educational visual</p>
+                        <p className="text-sm font-medium text-foreground">
+                          Generating {imageStyle.label} {imageStyle.emoji}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Creating visual content...</p>
                       </div>
                     </div>
                   </div>
