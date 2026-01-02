@@ -9,10 +9,12 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 interface ChatMessageProps {
   message: Message;
   isLatest?: boolean;
+  isGeneratingImage?: boolean;
 }
 
-export const ChatMessage = ({ message, isLatest }: ChatMessageProps) => {
+export const ChatMessage = ({ message, isLatest, isGeneratingImage }: ChatMessageProps) => {
   const isUser = message.role === "user";
+  const showImageLoader = isLatest && isGeneratingImage && message.content.includes('Generating educational image');
 
   return (
     <div
@@ -95,6 +97,21 @@ export const ChatMessage = ({ message, isLatest }: ChatMessageProps) => {
                 >
                   {message.content}
                 </ReactMarkdown>
+                
+                {/* Image generation loading spinner */}
+                {showImageLoader && (
+                  <div className="mt-3 p-4 rounded-lg border border-primary/30 bg-primary/5">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Generating diagram...</p>
+                        <p className="text-xs text-muted-foreground">Creating educational visual</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Render AI-generated images */}
                 {message.generatedImages && message.generatedImages.length > 0 && (
