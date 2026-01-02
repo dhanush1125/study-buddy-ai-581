@@ -59,6 +59,7 @@ export const useChat = (conversationId: string | null) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -309,6 +310,7 @@ export const useChat = (conversationId: string | null) => {
           });
 
           // Generate images (only first one to avoid overload)
+          setIsGeneratingImage(true);
           const generatedImages: string[] = [];
           for (const prompt of prompts.slice(0, 1)) {
             const imageUrl = await generateImage(prompt);
@@ -316,6 +318,7 @@ export const useChat = (conversationId: string | null) => {
               generatedImages.push(imageUrl);
             }
           }
+          setIsGeneratingImage(false);
 
           // Update message with generated images
           if (generatedImages.length > 0) {
@@ -393,6 +396,7 @@ export const useChat = (conversationId: string | null) => {
   return {
     messages,
     isLoading,
+    isGeneratingImage,
     messagesLoading,
     sendMessage,
     stopGeneration,

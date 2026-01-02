@@ -26,7 +26,7 @@ const Index = () => {
     deleteConversation,
   } = useConversations();
 
-  const { messages, isLoading, messagesLoading, sendMessage, stopGeneration } = useChat(currentConversationId);
+  const { messages, isLoading, isGeneratingImage, messagesLoading, sendMessage, stopGeneration } = useChat(currentConversationId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Redirect to auth if not logged in
@@ -198,6 +198,7 @@ Keep it stress-free and focused!`;
                     key={message.id || index}
                     message={message}
                     isLatest={index === messages.length - 1 && message.role === "assistant"}
+                    isGeneratingImage={isGeneratingImage}
                   />
                 ))}
               </div>
