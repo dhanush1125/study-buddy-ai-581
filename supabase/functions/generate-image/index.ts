@@ -22,7 +22,38 @@ serve(async (req) => {
       throw new Error("Image prompt is required");
     }
 
-    console.log("Generating educational image with prompt:", prompt);
+    console.log("Generating image with prompt:", prompt);
+
+    // Parse style from prompt (format: "STYLE | description" or just "description")
+    let style = "DIAGRAM";
+    let imageDescription = prompt;
+    
+    if (prompt.includes("|")) {
+      const parts = prompt.split("|");
+      style = parts[0].trim().toUpperCase();
+      imageDescription = parts.slice(1).join("|").trim();
+    }
+
+    // Build style-specific prompt
+    let styleHint = "";
+    switch (style) {
+      case "REALISTIC":
+        styleHint = "Ultra-realistic photograph, natural lighting, DSLR camera quality, high detail, professional photography, sharp focus";
+        break;
+      case "3D":
+        styleHint = "3D render, isometric view, soft lighting, clean geometry, depth and shadows, professional 3D visualization";
+        break;
+      case "ANIME":
+        styleHint = "Anime style, studio-quality illustration, soft shading, expressive, clean line art, vibrant but soft colors";
+        break;
+      case "DIAGRAM":
+      default:
+        styleHint = "Clean educational diagram, labeled, minimal colors, white or light background, student-friendly, suitable for academic learning";
+        break;
+    }
+
+    const fullPrompt = `${styleHint}. Subject: ${imageDescription}. High resolution, clear focus, no clutter.`;
+    console.log("Full image prompt:", fullPrompt);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -35,9 +66,7 @@ serve(async (req) => {
         messages: [
           {
             role: "user",
-            content: `Generate a clean, educational diagram or illustration: ${prompt}. 
-            Style: Clean, labeled, minimal colors, white or light background, student-friendly, suitable for academic learning.
-            Focus on clarity and educational value.`
+            content: fullPrompt
           }
         ],
         modalities: ["image", "text"]

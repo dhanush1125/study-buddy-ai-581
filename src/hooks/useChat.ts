@@ -15,19 +15,28 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 const IMAGE_GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
 
 // Helper to extract image generation requests from content
-const extractImageRequests = (content: string): { prompts: string[]; cleanContent: string } => {
+const extractImageRequests = (content: string): { prompts: string[]; cleanContent: string; styles: string[] } => {
   const regex = /\[GENERATE_IMAGE:\s*([^\]]+)\]/g;
   const prompts: string[] = [];
+  const styles: string[] = [];
   let match;
   
   while ((match = regex.exec(content)) !== null) {
-    prompts.push(match[1].trim());
+    const fullPrompt = match[1].trim();
+    prompts.push(fullPrompt);
+    
+    // Extract style for display purposes
+    if (fullPrompt.includes("|")) {
+      styles.push(fullPrompt.split("|")[0].trim().toUpperCase());
+    } else {
+      styles.push("DIAGRAM");
+    }
   }
   
   // Replace the markers with a placeholder for rendering
-  const cleanContent = content.replace(regex, '\n\n🖼️ *Generating educational image...*\n\n');
+  const cleanContent = content.replace(regex, '\n\n🖼️ *Generating image...*\n\n');
   
-  return { prompts, cleanContent };
+  return { prompts, cleanContent, styles };
 };
 
 // Generate an image using the edge function
@@ -293,17 +302,20 @@ export const useChat = (conversationId: string | null) => {
         }
 
         // Check for image generation requests after streaming is complete
-        const { prompts, cleanContent } = extractImageRequests(assistantContent);
+        const { prompts, cleanContent, styles } = extractImageRequests(assistantContent);
         
         if (prompts.length > 0) {
-          // Update content to show loading state
+          const styleLabel = styles[0] || "DIAGRAM";
+          const styleEmoji = styleLabel === "REALISTIC" ? "📸" : styleLabel === "3D" ? "🧊" : styleLabel === "ANIME" ? "🎌" : "📘";
+          
+          // Update content to show loading state with style
           setMessages((prev) => {
             const newMessages = [...prev];
             const lastMessage = newMessages[newMessages.length - 1];
             if (lastMessage?.role === "assistant") {
               newMessages[newMessages.length - 1] = {
                 ...lastMessage,
-                content: cleanContent,
+                content: cleanContent.replace('🖼️ *Generating image...*', `🖼️ *Generating ${styleLabel.toLowerCase()} image ${styleEmoji}...*`),
               };
             }
             return newMessages;
@@ -323,8 +335,8 @@ export const useChat = (conversationId: string | null) => {
           // Update message with generated images
           if (generatedImages.length > 0) {
             const finalContent = cleanContent.replace(
-              '🖼️ *Generating educational image...*',
-              '🖼️ *Educational diagram generated:*'
+              /🖼️ \*Generating .* image.*\.\.\.\*/,
+              `🖼️ *${styleLabel} image generated ${styleEmoji}:*`
             );
             
             setMessages((prev) => {
@@ -344,7 +356,7 @@ export const useChat = (conversationId: string | null) => {
           } else {
             // Image generation failed, update content
             const finalContent = cleanContent.replace(
-              '🖼️ *Generating educational image...*',
+              /🖼️ \*Generating .* image.*\.\.\.\*/,
               '🖼️ *[Image generation unavailable - here\'s the concept in text form]*'
             );
             
