@@ -1,10 +1,11 @@
 import { useState, FormEvent, KeyboardEvent, useRef } from "react";
-import { Send, Square, ImagePlus, X } from "lucide-react";
+import { Send, Square, ImagePlus, X, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ChatInputProps {
-  onSend: (message: string, imageBase64?: string) => void;
+  onSend: (message: string, imageBase64?: string, storyMode?: boolean) => void;
   onStop?: () => void;
   isLoading?: boolean;
   disabled?: boolean;
@@ -14,12 +15,13 @@ export const ChatInput = ({ onSend, onStop, isLoading, disabled }: ChatInputProp
   const [input, setInput] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [storyMode, setStoryMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if ((input.trim() || imageBase64) && !disabled) {
-      onSend(input, imageBase64 || undefined);
+      onSend(input, imageBase64 || undefined, storyMode);
       setInput("");
       setImagePreview(null);
       setImageBase64(null);
@@ -109,6 +111,33 @@ export const ChatInput = ({ onSend, onStop, isLoading, disabled }: ChatInputProp
         >
           <ImagePlus className="w-5 h-5" />
         </Button>
+
+        {/* Story Mode toggle */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={() => setStoryMode(!storyMode)}
+                disabled={disabled || isLoading}
+                className={cn(
+                  "flex-shrink-0 h-10 w-10 rounded-xl transition-all",
+                  storyMode 
+                    ? "bg-primary/20 text-primary hover:bg-primary/30 ring-2 ring-primary/50" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <BookOpen className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p className="font-medium">{storyMode ? "Story Mode ON" : "Story Mode OFF"}</p>
+              <p className="text-xs text-muted-foreground">Visual anime stories for complex concepts</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
         <textarea
           value={input}
