@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { StoryPanelGrid } from "./StoryPanelGrid";
 
 interface ChatMessageProps {
   message: Message;
@@ -15,6 +16,12 @@ interface ChatMessageProps {
 export const ChatMessage = ({ message, isLatest, isGeneratingImage }: ChatMessageProps) => {
   const isUser = message.role === "user";
   const showImageLoader = isLatest && isGeneratingImage && message.content.includes('Generating');
+  
+  // Detect if this is story mode content (anime panels)
+  const isStoryMode = message.content.includes('Story') || 
+                      message.content.includes('Panel') || 
+                      message.content.includes('anime') ||
+                      (message.generatedImages && message.generatedImages.length > 1);
   
   // Extract style from loading message for display
   const getImageStyle = () => {
@@ -126,18 +133,22 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage }: ChatMessag
                 
                 {/* Render AI-generated images */}
                 {message.generatedImages && message.generatedImages.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {message.generatedImages.map((imgUrl, idx) => (
-                      <div key={idx} className="rounded-lg overflow-hidden border border-border/50 bg-background/50">
-                        <img
-                          src={imgUrl}
-                          alt={`AI-generated educational diagram ${idx + 1}`}
-                          className="w-full h-auto max-h-96 object-contain"
-                          loading="lazy"
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  isStoryMode ? (
+                    <StoryPanelGrid images={message.generatedImages} />
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {message.generatedImages.map((imgUrl, idx) => (
+                        <div key={idx} className="rounded-lg overflow-hidden border border-border/50 bg-background/50">
+                          <img
+                            src={imgUrl}
+                            alt={`AI-generated educational diagram ${idx + 1}`}
+                            className="w-full h-auto max-h-96 object-contain"
+                            loading="lazy"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )
                 )}
               </>
             )}
