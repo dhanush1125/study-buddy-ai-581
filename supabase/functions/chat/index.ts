@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, image } = await req.json();
+    const { message, image, storyMode } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -451,7 +451,12 @@ If student asks in Tamil, Hindi, or Hinglish, respond in that language while kee
         });
       }
     } else {
-      userContent = message;
+      // If story mode is enabled, prepend instruction to use story learning
+      if (storyMode) {
+        userContent = `📖 STORY MODE ENABLED: Please explain this using the Advanced Image → Story Learning Mode with anime panels, micro-narration, and concept mapping. Create a visual story that I can remember and reproduce in exams.\n\n${message}`;
+      } else {
+        userContent = message;
+      }
     }
 
     console.log("Sending request to AI gateway with streaming enabled");
