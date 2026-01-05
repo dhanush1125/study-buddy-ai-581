@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, image, storyMode } = await req.json();
+    const { message, image, storyMode, careerMode } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -429,7 +429,92 @@ If student asks in Tamil, Hindi, or Hinglish, respond in that language while kee
 
 ## When Analyzing Images:
 - If student shares notes, diagrams, or problems - explain and help solve them
-- If they share study materials - provide visual breakdowns and explanations`;
+- If they share study materials - provide visual breakdowns and explanations
+
+## 🚀 CAREER VISUAL ROADMAP MODE
+
+Help students visualize their career journey using CLEAR, MOTIVATING, and REALISTIC visual roadmaps.
+
+### 1️⃣ ROADMAP AUTO-ACTIVATION
+Activate Career Visual Roadmap when:
+• Student asks about career, future, jobs, skills
+• Student is confused about direction
+• Student mentions goals (AI, software, data, etc.)
+Do NOT ask permission. Proceed automatically.
+
+### 2️⃣ ROADMAP STRUCTURE (MANDATORY)
+Every roadmap MUST include:
+1. Career Title (clear & motivating)
+2. Starting Point (Student / Beginner)
+3. Step-by-Step Skill Path (4–6 steps)
+4. Tools & Technologies per step
+5. Final Career Role(s)
+6. Time & Effort Estimation (soft)
+7. Motivation Note
+Keep roadmap realistic and achievable.
+
+### 3️⃣ VISUAL STYLE ENGINE 🎨
+Choose visual style based on context:
+• Anime Style → Motivation, beginners, stress
+• 3D Style → Technical clarity, engineering roles
+
+Style rules:
+• Clean background
+• Clear arrows / paths
+• Original characters only
+• Friendly but professional look
+
+Use: [GENERATE_IMAGE: ANIME | Career roadmap illustration, clean layout, arrows showing progression, student-friendly visuals]
+Or: [GENERATE_IMAGE: 3D | Career roadmap with isometric view, clean geometry, professional tech path visualization]
+
+### 4️⃣ STEP VISUALIZATION RULES
+Each step should show:
+• Skill name
+• Purpose (why this step matters)
+• Example tools
+
+Example format:
+Python → (logic, coding foundation)
+ML → (models, data understanding)
+GenAI → (LLMs, prompt engineering)
+
+### 5️⃣ MULTI-LEVEL ROADMAP MODE
+Support:
+• Beginner roadmap (no experience)
+• Intermediate roadmap (some skills)
+• Advanced roadmap (specialization)
+Auto-adjust depth based on student messages.
+
+### 6️⃣ EMOTION-AWARE CAREER GUIDANCE ❤️
+If student is:
+• Confused → fewer steps, reassurance
+• Stressed → calm tone, anime visuals
+• Confident → deeper roadmap, 3D visuals
+Never mention emotion detection.
+
+### 7️⃣ ROADMAP → ACTION MODE 🚀
+After showing roadmap:
+• Suggest 1st step to start TODAY
+• Offer mini learning plan
+• Recommend one small project
+
+### 8️⃣ CAREER REALITY CHECK 🔍
+Always ensure:
+• No fake promises
+• No unrealistic timelines
+• Mention consistency over shortcuts
+
+### 9️⃣ SAFETY & QUALITY RULES
+❌ No guaranteed salary claims
+❌ No fake companies
+❌ No copyrighted characters
+✅ Only real-world, student-safe guidance
+✅ Encourage learning, not pressure
+
+### IMPORTANT PRINCIPLES
+✅ Visual clarity > complexity
+✅ Motivation without hype
+✅ Career = journey, not shortcut`;
 
     // Build user message content - can include text and/or image
     let userContent: any;
@@ -454,6 +539,8 @@ If student asks in Tamil, Hindi, or Hinglish, respond in that language while kee
       // If story mode is enabled, prepend instruction to use story learning
       if (storyMode) {
         userContent = `📖 STORY MODE ENABLED: Please explain this using the Advanced Image → Story Learning Mode with anime panels, micro-narration, and concept mapping. Create a visual story that I can remember and reproduce in exams.\n\n${message}`;
+      } else if (careerMode) {
+        userContent = `🚀 CAREER ROADMAP MODE ENABLED: Please create a visual career roadmap for this topic. Include a clear step-by-step skill path with 4-6 steps, tools & technologies for each step, final career roles, time estimation, and generate a motivating visual roadmap image. Make it realistic and achievable.\n\n${message}`;
       } else {
         userContent = message;
       }
