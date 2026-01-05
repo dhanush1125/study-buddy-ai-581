@@ -147,7 +147,7 @@ export const useChat = (conversationId: string | null) => {
   );
 
   const sendMessage = useCallback(
-    async (input: string, imageBase64?: string, storyMode?: boolean) => {
+    async (input: string, imageBase64?: string, storyMode?: boolean, careerMode?: boolean) => {
       if ((!input.trim() && !imageBase64) || isLoading) return;
 
       const userMessage: Message = {
@@ -182,6 +182,7 @@ export const useChat = (conversationId: string | null) => {
             message: input.trim() || "Analyze this image and explain what you see",
             image: imageBase64,
             storyMode: storyMode || false,
+            careerMode: careerMode || false,
           }),
           signal: abortControllerRef.current.signal,
         });

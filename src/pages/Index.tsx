@@ -45,7 +45,7 @@ const Index = () => {
   }, [messages]);
 
   // Handle new conversation with first message
-  const handleSendMessage = async (input: string, imageBase64?: string, storyMode?: boolean) => {
+  const handleSendMessage = async (input: string, imageBase64?: string, storyMode?: boolean, careerMode?: boolean) => {
     if (!currentConversationId) {
       // Create new conversation with title from first message
       const title = input.trim().slice(0, 50) || "New Conversation";
@@ -54,11 +54,11 @@ const Index = () => {
         setCurrentConversationId(conversation.id);
         // Wait for state to update then send
         setTimeout(() => {
-          sendMessage(input, imageBase64, storyMode);
+          sendMessage(input, imageBase64, storyMode, careerMode);
         }, 100);
       }
     } else {
-      sendMessage(input, imageBase64, storyMode);
+      sendMessage(input, imageBase64, storyMode, careerMode);
     }
   };
 
