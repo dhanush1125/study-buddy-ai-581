@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { StoryPanelGrid } from "./StoryPanelGrid";
+import { DownloadOptions } from "./DownloadOptions";
 
 interface ChatMessageProps {
   message: Message;
@@ -133,22 +134,30 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage }: ChatMessag
                 
                 {/* Render AI-generated images */}
                 {message.generatedImages && message.generatedImages.length > 0 && (
-                  isStoryMode ? (
-                    <StoryPanelGrid images={message.generatedImages} />
-                  ) : (
-                    <div className="mt-3 space-y-2">
-                      {message.generatedImages.map((imgUrl, idx) => (
-                        <div key={idx} className="rounded-lg overflow-hidden border border-border/50 bg-background/50">
-                          <img
-                            src={imgUrl}
-                            alt={`AI-generated educational diagram ${idx + 1}`}
-                            className="w-full h-auto max-h-96 object-contain"
-                            loading="lazy"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )
+                  <>
+                    {isStoryMode ? (
+                      <StoryPanelGrid images={message.generatedImages} />
+                    ) : (
+                      <div className="mt-3 space-y-2">
+                        {message.generatedImages.map((imgUrl, idx) => (
+                          <div key={idx} className="rounded-lg overflow-hidden border border-border/50 bg-background/50">
+                            <img
+                              src={imgUrl}
+                              alt={`AI-generated educational diagram ${idx + 1}`}
+                              className="w-full h-auto max-h-96 object-contain"
+                              loading="lazy"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Download Options */}
+                    <DownloadOptions 
+                      images={message.generatedImages} 
+                      messageContent={message.content}
+                    />
+                  </>
                 )}
               </>
             )}
