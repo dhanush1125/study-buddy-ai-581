@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, image, storyMode, careerMode } = await req.json();
+    const { message, image, storyMode, careerMode, videoMode } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -514,7 +514,83 @@ Always ensure:
 ### IMPORTANT PRINCIPLES
 ✅ Visual clarity > complexity
 ✅ Motivation without hype
-✅ Career = journey, not shortcut`;
+✅ Career = journey, not shortcut
+
+## 🎬 VIDEO GENERATION MODE
+
+You support VIDEO GENERATION for education. Generate SHORT, CLEAR, EDUCATIONAL VIDEOS to explain concepts using animated visuals, anime/3D/diagram styles, and step-by-step flow.
+
+### 1️⃣ VIDEO AUTO-ACTIVATION
+Automatically generate videos when:
+• Topic involves process, flow, or states
+• Student is confused or stressed
+• Concept is hard to visualize
+• Student asks for "video", "animation", "explain visually"
+Do NOT ask permission. Decide internally when video helps learning.
+
+### 2️⃣ VIDEO TYPES SUPPORTED
+📘 CONCEPT EXPLAINER VIDEO
+• OS, DBMS, AI, ML concepts
+• Animated diagrams
+• Slow pace, beginner-friendly
+
+🎌 ANIME STORY VIDEO
+• Concept explained as a story
+• Anime characters
+• Emotion-aware narration
+
+🧊 3D TECH VIDEO
+• Neural networks
+• Architectures
+• System internals
+
+🎯 EXAM REVISION VIDEO
+• Key points only
+• Diagrams + labels
+• Last-day friendly
+
+### 3️⃣ VIDEO STRUCTURE (MANDATORY)
+Each video MUST have:
+1. Video Title
+2. Goal (what student will learn)
+3. Scene-by-scene breakdown
+4. Visual + narration per scene
+5. Final summary / recall
+
+Duration rules:
+• 30–60 sec → revision
+• 1–2 min → concept
+• 2–3 min → story mode
+
+### 4️⃣ HOW TO REQUEST VIDEO GENERATION
+Use this EXACT format on its own line:
+[GENERATE_VIDEO: STYLE | your detailed video description here]
+
+**Styles available:**
+• CONCEPT → Educational explainer animation
+• ANIME → Anime-style story video
+• 3D → 3D animated technical visualization
+• REVISION → Quick exam-focused animation
+
+**Examples:**
+[GENERATE_VIDEO: CONCEPT | Animated explanation of how CPU scheduling works with process states, arrows showing transitions, calm educational pace]
+[GENERATE_VIDEO: ANIME | Anime-style story of deadlock with original characters representing processes waiting for resources]
+[GENERATE_VIDEO: 3D | 3D visualization of neural network with data flowing through layers, soft lighting, professional quality]
+[GENERATE_VIDEO: REVISION | Quick animated summary of DBMS normalization forms with labeled diagrams]
+
+### 5️⃣ NARRATION RULES
+• Simple English
+• Calm tone
+• No heavy jargon first
+• Emotion-aware pacing
+
+### 6️⃣ VIDEO SAFETY RULES
+❌ No copyrighted characters
+❌ No real celebrities
+❌ No adult / violent content
+✅ Only original, educational visuals
+✅ Student-friendly pace
+✅ Learning-first design`;
 
     // Build user message content - can include text and/or image
     let userContent: any;
@@ -541,6 +617,14 @@ Always ensure:
         userContent = `📖 STORY MODE ENABLED: Please explain this using the Advanced Image → Story Learning Mode with anime panels, micro-narration, and concept mapping. Create a visual story that I can remember and reproduce in exams.\n\n${message}`;
       } else if (careerMode) {
         userContent = `🚀 CAREER ROADMAP MODE ENABLED: Please create a visual career roadmap for this topic. Include a clear step-by-step skill path with 4-6 steps, tools & technologies for each step, final career roles, time estimation, and generate a motivating visual roadmap image. Make it realistic and achievable.\n\n${message}`;
+      } else if (videoMode) {
+        userContent = `🎬 VIDEO MODE ENABLED: Please create a short educational animated video for this topic. Use the [GENERATE_VIDEO: STYLE | description] format to generate the video. Include:
+1. Video title and learning goal
+2. Scene breakdown with visuals and narration
+3. Generate the actual video using [GENERATE_VIDEO: ...] format
+Choose the best style (CONCEPT/ANIME/3D/REVISION) based on the topic. Keep it short (30-60 seconds for revision, 1-2 minutes for concepts).
+
+${message}`;
       } else {
         userContent = message;
       }

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { BookOpen, User } from "lucide-react";
+import { BookOpen, User, Download } from "lucide-react";
 import type { Message } from "@/hooks/useChat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -8,16 +8,19 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { StoryPanelGrid } from "./StoryPanelGrid";
 import { DownloadOptions } from "./DownloadOptions";
 import { ShareOptions } from "./ShareOptions";
+import { Button } from "./ui/button";
 
 interface ChatMessageProps {
   message: Message;
   isLatest?: boolean;
   isGeneratingImage?: boolean;
+  isGeneratingVideo?: boolean;
 }
 
-export const ChatMessage = ({ message, isLatest, isGeneratingImage }: ChatMessageProps) => {
+export const ChatMessage = ({ message, isLatest, isGeneratingImage, isGeneratingVideo }: ChatMessageProps) => {
   const isUser = message.role === "user";
   const showImageLoader = isLatest && isGeneratingImage && message.content.includes('Generating');
+  const showVideoLoader = isLatest && isGeneratingVideo && message.content.includes('Generating');
   
   // Detect if this is story mode content (anime panels)
   const isStoryMode = message.content.includes('Story') || 
@@ -33,6 +36,33 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage }: ChatMessag
     return { label: 'diagram', emoji: '📘' };
   };
   const imageStyle = getImageStyle();
+
+  // Extract video style from loading message
+  const getVideoStyle = () => {
+    if (message.content.includes('anime')) return { label: 'anime video', emoji: '🎌' };
+    if (message.content.includes('3d') || message.content.includes('3D')) return { label: '3D video', emoji: '🧊' };
+    if (message.content.includes('revision')) return { label: 'revision video', emoji: '🎯' };
+    return { label: 'concept video', emoji: '📘' };
+  };
+  const videoStyle = getVideoStyle();
+
+  // Handle video download
+  const handleVideoDownload = async (videoUrl: string, index: number) => {
+    try {
+      const response = await fetch(videoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `studybuddy-video-${index + 1}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Video download failed:', error);
+    }
+  };
 
   return (
     <div
@@ -165,6 +195,62 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage }: ChatMessag
                           images={message.generatedImages} 
                           messageContent={message.content}
                         />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Video generation loading spinner */}
+                {showVideoLoader && (
+                  <div className="mt-3 p-4 rounded-lg border border-destructive/30 bg-destructive/5">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="w-8 h-8 border-3 border-destructive/30 border-t-destructive rounded-full animate-spin" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          Generating {videoStyle.label} {videoStyle.emoji}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Creating animated educational video...</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Render AI-generated videos */}
+                {message.generatedVideos && message.generatedVideos.length > 0 && (
+                  <>
+                    <div className="mt-3 space-y-3">
+                      {message.generatedVideos.map((videoUrl, idx) => (
+                        <div key={idx} className="rounded-lg overflow-hidden border border-border/50 bg-background/50">
+                          <video
+                            src={videoUrl}
+                            controls
+                            className="w-full h-auto max-h-96"
+                            preload="metadata"
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Video Download Options */}
+                    <div className="mt-3 pt-3 border-t border-border/30">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground">Download Video:</span>
+                        {message.generatedVideos.map((videoUrl, idx) => (
+                          <Button
+                            key={idx}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleVideoDownload(videoUrl, idx)}
+                            className="gap-1.5 h-7 text-xs"
+                          >
+                            <Download className="w-3 h-3" />
+                            MP4
+                          </Button>
+                        ))}
                       </div>
                     </div>
                   </>

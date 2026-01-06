@@ -8,11 +8,13 @@ export type Message = {
   role: "user" | "assistant";
   content: string;
   image?: string;
-  generatedImages?: string[]; // For AI-generated images
+  generatedImages?: string[];
+  generatedVideos?: string[]; // For AI-generated videos
 };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 const IMAGE_GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
+const VIDEO_GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-video`;
 
 // Helper to extract image generation requests from content
 const extractImageRequests = (content: string): { prompts: string[]; cleanContent: string; styles: string[] } => {
@@ -35,6 +37,31 @@ const extractImageRequests = (content: string): { prompts: string[]; cleanConten
   
   // Replace the markers with a placeholder for rendering
   const cleanContent = content.replace(regex, '\n\n🖼️ *Generating image...*\n\n');
+  
+  return { prompts, cleanContent, styles };
+};
+
+// Helper to extract video generation requests from content
+const extractVideoRequests = (content: string): { prompts: string[]; cleanContent: string; styles: string[] } => {
+  const regex = /\[GENERATE_VIDEO:\s*([^\]]+)\]/g;
+  const prompts: string[] = [];
+  const styles: string[] = [];
+  let match;
+  
+  while ((match = regex.exec(content)) !== null) {
+    const fullPrompt = match[1].trim();
+    prompts.push(fullPrompt);
+    
+    // Extract style for display purposes
+    if (fullPrompt.includes("|")) {
+      styles.push(fullPrompt.split("|")[0].trim().toUpperCase());
+    } else {
+      styles.push("CONCEPT");
+    }
+  }
+  
+  // Replace the markers with a placeholder for rendering
+  const cleanContent = content.replace(regex, '\n\n🎬 *Generating video...*\n\n');
   
   return { prompts, cleanContent, styles };
 };
@@ -64,11 +91,37 @@ const generateImage = async (prompt: string): Promise<string | null> => {
   }
 };
 
+// Generate a video using the edge function
+const generateVideo = async (prompt: string, style: string = "CONCEPT"): Promise<string | null> => {
+  try {
+    const response = await fetch(VIDEO_GEN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ prompt, style, duration: 5 }),
+    });
+
+    if (!response.ok) {
+      console.error("Video generation failed:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.videoUrl || null;
+  } catch (error) {
+    console.error("Video generation error:", error);
+    return null;
+  }
+};
+
 export const useChat = (conversationId: string | null) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -147,7 +200,7 @@ export const useChat = (conversationId: string | null) => {
   );
 
   const sendMessage = useCallback(
-    async (input: string, imageBase64?: string, storyMode?: boolean, careerMode?: boolean) => {
+    async (input: string, imageBase64?: string, storyMode?: boolean, careerMode?: boolean, videoMode?: boolean) => {
       if ((!input.trim() && !imageBase64) || isLoading) return;
 
       const userMessage: Message = {
@@ -183,6 +236,7 @@ export const useChat = (conversationId: string | null) => {
             image: imageBase64,
             storyMode: storyMode || false,
             careerMode: careerMode || false,
+            videoMode: videoMode || false,
           }),
           signal: abortControllerRef.current.signal,
         });
@@ -378,6 +432,82 @@ export const useChat = (conversationId: string | null) => {
           }
         }
 
+        // Check for video generation requests after streaming is complete
+        const { prompts: videoPrompts, cleanContent: videoCleanContent, styles: videoStyles } = extractVideoRequests(assistantContent);
+        
+        if (videoPrompts.length > 0) {
+          const videoStyleLabel = videoStyles[0] || "CONCEPT";
+          const videoStyleEmoji = videoStyleLabel === "ANIME" ? "🎌" : videoStyleLabel === "3D" ? "🧊" : videoStyleLabel === "REVISION" ? "🎯" : "📘";
+          
+          // Update content to show loading state with style
+          const currentContent = assistantContent;
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            if (lastMessage?.role === "assistant") {
+              newMessages[newMessages.length - 1] = {
+                ...lastMessage,
+                content: videoCleanContent.replace('🎬 *Generating video...*', `🎬 *Generating ${videoStyleLabel.toLowerCase()} video ${videoStyleEmoji}...*`),
+              };
+            }
+            return newMessages;
+          });
+
+          // Generate videos (only first one to avoid overload)
+          setIsGeneratingVideo(true);
+          const generatedVideos: string[] = [];
+          for (const prompt of videoPrompts.slice(0, 1)) {
+            const videoUrl = await generateVideo(prompt, videoStyleLabel);
+            if (videoUrl) {
+              generatedVideos.push(videoUrl);
+            }
+          }
+          setIsGeneratingVideo(false);
+
+          // Update message with generated videos
+          if (generatedVideos.length > 0) {
+            const finalVideoContent = videoCleanContent.replace(
+              /🎬 \*Generating .* video.*\.\.\.\*/,
+              `🎬 *${videoStyleLabel} video generated ${videoStyleEmoji}:*`
+            );
+            
+            setMessages((prev) => {
+              const newMessages = [...prev];
+              const lastMessage = newMessages[newMessages.length - 1];
+              if (lastMessage?.role === "assistant") {
+                newMessages[newMessages.length - 1] = {
+                  ...lastMessage,
+                  content: finalVideoContent,
+                  generatedVideos,
+                };
+              }
+              return newMessages;
+            });
+            
+            assistantContent = finalVideoContent;
+          } else {
+            // Video generation failed, update content
+            const finalVideoContent = videoCleanContent.replace(
+              /🎬 \*Generating .* video.*\.\.\.\*/,
+              '🎬 *[Video generation unavailable - here\'s the concept explanation instead]*'
+            );
+            
+            setMessages((prev) => {
+              const newMessages = [...prev];
+              const lastMessage = newMessages[newMessages.length - 1];
+              if (lastMessage?.role === "assistant") {
+                newMessages[newMessages.length - 1] = {
+                  ...lastMessage,
+                  content: finalVideoContent,
+                };
+              }
+              return newMessages;
+            });
+            
+            assistantContent = finalVideoContent;
+          }
+        }
+
         // Save final assistant message content
         if (assistantMessageId && assistantContent) {
           await updateMessage(assistantMessageId, assistantContent);
@@ -411,6 +541,7 @@ export const useChat = (conversationId: string | null) => {
     messages,
     isLoading,
     isGeneratingImage,
+    isGeneratingVideo,
     messagesLoading,
     sendMessage,
     stopGeneration,
