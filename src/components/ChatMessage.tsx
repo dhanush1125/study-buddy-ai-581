@@ -7,6 +7,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { StoryPanelGrid } from "./StoryPanelGrid";
 import { DownloadOptions } from "./DownloadOptions";
+import { ShareOptions } from "./ShareOptions";
 
 interface ChatMessageProps {
   message: Message;
@@ -152,11 +153,20 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage }: ChatMessag
                       </div>
                     )}
                     
-                    {/* Download Options */}
-                    <DownloadOptions 
-                      images={message.generatedImages} 
-                      messageContent={message.content}
-                    />
+                    {/* Download & Share Options */}
+                    <div className="mt-3 pt-3 border-t border-border/30">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground">Save & Share:</span>
+                        <DownloadOptions 
+                          images={message.generatedImages} 
+                          messageContent={message.content}
+                        />
+                        <ShareOptions 
+                          images={message.generatedImages} 
+                          messageContent={message.content}
+                        />
+                      </div>
+                    </div>
                   </>
                 )}
               </>

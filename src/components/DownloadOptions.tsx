@@ -93,11 +93,8 @@ export const DownloadOptions = ({ images, contentTitle, messageContent = '' }: D
   const recommended = getRecommendedFormat();
 
   return (
-    <div className="mt-3 pt-3 border-t border-border/30">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-muted-foreground">Download:</span>
-        
-        <DropdownMenu>
+    <>
+      <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="outline" 
@@ -180,25 +177,6 @@ export const DownloadOptions = ({ images, contentTitle, messageContent = '' }: D
         >
           {downloading === 'png' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Image className="w-3 h-3" />}
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs hover:bg-primary/10"
-          onClick={() => handleDownload('pdf')}
-          disabled={downloading !== null}
-        >
-          {downloading === 'pdf' ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileText className="w-3 h-3" />}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs hover:bg-primary/10"
-          onClick={() => handleDownload('ppt')}
-          disabled={downloading !== null}
-        >
-          {downloading === 'ppt' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Presentation className="w-3 h-3" />}
-        </Button>
-      </div>
-    </div>
+    </>
   );
 };
