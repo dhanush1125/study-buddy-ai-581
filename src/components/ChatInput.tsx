@@ -1,11 +1,11 @@
 import { useState, FormEvent, KeyboardEvent, useRef } from "react";
-import { Send, Square, ImagePlus, X, BookOpen, Compass } from "lucide-react";
+import { Send, Square, ImagePlus, X, BookOpen, Compass, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ChatInputProps {
-  onSend: (message: string, imageBase64?: string, storyMode?: boolean, careerMode?: boolean) => void;
+  onSend: (message: string, imageBase64?: string, storyMode?: boolean, careerMode?: boolean, videoMode?: boolean) => void;
   onStop?: () => void;
   isLoading?: boolean;
   disabled?: boolean;
@@ -17,12 +17,13 @@ export const ChatInput = ({ onSend, onStop, isLoading, disabled }: ChatInputProp
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [storyMode, setStoryMode] = useState(false);
   const [careerMode, setCareerMode] = useState(false);
+  const [videoMode, setVideoMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if ((input.trim() || imageBase64) && !disabled) {
-      onSend(input, imageBase64 || undefined, storyMode, careerMode);
+      onSend(input, imageBase64 || undefined, storyMode, careerMode, videoMode);
       setInput("");
       setImagePreview(null);
       setImageBase64(null);
@@ -31,12 +32,26 @@ export const ChatInput = ({ onSend, onStop, isLoading, disabled }: ChatInputProp
 
   const toggleStoryMode = () => {
     setStoryMode(!storyMode);
-    if (!storyMode) setCareerMode(false); // Only one mode at a time
+    if (!storyMode) {
+      setCareerMode(false);
+      setVideoMode(false);
+    }
   };
 
   const toggleCareerMode = () => {
     setCareerMode(!careerMode);
-    if (!careerMode) setStoryMode(false); // Only one mode at a time
+    if (!careerMode) {
+      setStoryMode(false);
+      setVideoMode(false);
+    }
+  };
+
+  const toggleVideoMode = () => {
+    setVideoMode(!videoMode);
+    if (!videoMode) {
+      setStoryMode(false);
+      setCareerMode(false);
+    }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -173,6 +188,33 @@ export const ChatInput = ({ onSend, onStop, isLoading, disabled }: ChatInputProp
             <TooltipContent side="top">
               <p className="font-medium">{careerMode ? "Career Mode ON" : "Career Mode OFF"}</p>
               <p className="text-xs text-muted-foreground">Visual career roadmaps & guidance</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        {/* Video Mode toggle */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={toggleVideoMode}
+                disabled={disabled || isLoading}
+                className={cn(
+                  "flex-shrink-0 h-10 w-10 rounded-xl transition-all",
+                  videoMode 
+                    ? "bg-destructive/20 text-destructive hover:bg-destructive/30 ring-2 ring-destructive/50" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Video className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p className="font-medium">{videoMode ? "Video Mode ON" : "Video Mode OFF"}</p>
+              <p className="text-xs text-muted-foreground">Generate educational animated videos</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

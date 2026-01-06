@@ -26,7 +26,7 @@ const Index = () => {
     deleteConversation,
   } = useConversations();
 
-  const { messages, isLoading, isGeneratingImage, messagesLoading, sendMessage, stopGeneration } = useChat(currentConversationId);
+  const { messages, isLoading, isGeneratingImage, isGeneratingVideo, messagesLoading, sendMessage, stopGeneration } = useChat(currentConversationId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Redirect to auth if not logged in
@@ -45,7 +45,7 @@ const Index = () => {
   }, [messages]);
 
   // Handle new conversation with first message
-  const handleSendMessage = async (input: string, imageBase64?: string, storyMode?: boolean, careerMode?: boolean) => {
+  const handleSendMessage = async (input: string, imageBase64?: string, storyMode?: boolean, careerMode?: boolean, videoMode?: boolean) => {
     if (!currentConversationId) {
       // Create new conversation with title from first message
       const title = input.trim().slice(0, 50) || "New Conversation";
@@ -54,11 +54,11 @@ const Index = () => {
         setCurrentConversationId(conversation.id);
         // Wait for state to update then send
         setTimeout(() => {
-          sendMessage(input, imageBase64, storyMode, careerMode);
+          sendMessage(input, imageBase64, storyMode, careerMode, videoMode);
         }, 100);
       }
     } else {
-      sendMessage(input, imageBase64, storyMode, careerMode);
+      sendMessage(input, imageBase64, storyMode, careerMode, videoMode);
     }
   };
 
@@ -199,6 +199,7 @@ Keep it stress-free and focused!`;
                     message={message}
                     isLatest={index === messages.length - 1 && message.role === "assistant"}
                     isGeneratingImage={isGeneratingImage}
+                    isGeneratingVideo={isGeneratingVideo}
                   />
                 ))}
               </div>
