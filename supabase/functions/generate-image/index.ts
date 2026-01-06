@@ -52,68 +52,81 @@ serve(async (req) => {
         break;
     }
 
-    const fullPrompt = `${styleHint}. Subject: ${imageDescription}. High resolution, clear focus, no clutter.`;
+    // More explicit prompt that forces image generation
+    const fullPrompt = `Generate an image: ${styleHint}. Subject: ${imageDescription}. High resolution, clear focus, no clutter. DO NOT just describe the image - YOU MUST GENERATE AND RETURN THE ACTUAL IMAGE.`;
     console.log("Full image prompt:", fullPrompt);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: fullPrompt
-          }
-        ],
-        modalities: ["image", "text"]
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Image generation error:", response.status, errorText);
+    // Retry logic - sometimes the model needs a second attempt
+    const maxRetries = 3;
+    let lastResponse = null;
+    let lastData = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      console.log(`Image generation attempt ${attempt}/${maxRetries}`);
       
-      if (response.status === 429) {
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image-preview",
+          messages: [
+            {
+              role: "user",
+              content: attempt === 1 
+                ? fullPrompt 
+                : `CREATE AN IMAGE NOW. ${fullPrompt} I need the actual generated image, not a text description.`
+            }
+          ],
+          modalities: ["image", "text"]
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Attempt ${attempt} error:`, response.status, errorText);
+        
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({ error: "Rate limits exceeded, please try again later." }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (response.status === 402) {
+          return new Response(
+            JSON.stringify({ error: "Payment required, please add funds." }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        continue;
+      }
+
+      lastResponse = response;
+      lastData = await response.json();
+      console.log(`Attempt ${attempt} response received`);
+      
+      // Check if we got an image
+      const imageUrl = lastData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (imageUrl) {
+        console.log("Image successfully generated on attempt", attempt);
         return new Response(
-          JSON.stringify({ error: "Rate limits exceeded, please try again later." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ imageUrl, textContent: lastData.choices?.[0]?.message?.content || "" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required, please add funds." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
       
-      return new Response(
-        JSON.stringify({ error: "Image generation failed" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.log(`Attempt ${attempt}: No image in response, retrying...`);
     }
 
-    const data = await response.json();
-    console.log("Image generation response received");
+    // All retries failed - return error with last text content
+    const textContent = lastData?.choices?.[0]?.message?.content || "";
+    console.error("All attempts failed. No image generated after", maxRetries, "attempts");
     
-    // Extract the image URL from the response
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    const textContent = data.choices?.[0]?.message?.content || "";
-    
-    if (!imageUrl) {
-      console.error("No image in response:", JSON.stringify(data));
-      return new Response(
-        JSON.stringify({ error: "No image generated", textContent }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     return new Response(
-      JSON.stringify({ imageUrl, textContent }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Failed to generate image after multiple attempts", textContent }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Generate image function error:", error);
