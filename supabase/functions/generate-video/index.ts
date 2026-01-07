@@ -50,7 +50,8 @@ serve(async (req) => {
     const fullPrompt = `Create a detailed educational illustration: ${styleHint}. Content: ${prompt}. High resolution, clear focus, no clutter, visually engaging for students.`;
     console.log("Generating educational image with prompt:", fullPrompt);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+    // Use chat completions endpoint with image modality
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -58,8 +59,10 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-image",
-        prompt: fullPrompt,
-        n: 1,
+        messages: [
+          { role: "user", content: fullPrompt }
+        ],
+        modalities: ["image", "text"],
       }),
     });
 
@@ -86,13 +89,13 @@ serve(async (req) => {
     const data = await response.json();
     console.log("Image generation response received");
     
-    // Extract image URL from response
-    const imageUrl = data.data?.[0]?.url || data.data?.[0]?.b64_json;
+    // Extract image URL from chat completions response format
+    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     
     if (!imageUrl) {
-      console.error("No image URL in response:", data);
+      console.error("No image URL in response");
       return new Response(
-        JSON.stringify({ error: "Failed to generate visual content", details: data }),
+        JSON.stringify({ error: "Failed to generate visual content" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
