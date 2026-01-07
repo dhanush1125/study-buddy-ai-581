@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { BookOpen, User, Download } from "lucide-react";
+import { BookOpen, User, Download, Volume2, VolumeX, Pause } from "lucide-react";
 import type { Message } from "@/hooks/useChat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -9,6 +9,7 @@ import { StoryPanelGrid } from "./StoryPanelGrid";
 import { DownloadOptions } from "./DownloadOptions";
 import { ShareOptions } from "./ShareOptions";
 import { Button } from "./ui/button";
+import { useSpeech } from "@/hooks/useSpeech";
 
 interface ChatMessageProps {
   message: Message;
@@ -21,6 +22,9 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage, isGenerating
   const isUser = message.role === "user";
   const showImageLoader = isLatest && isGeneratingImage && message.content.includes('Generating');
   const showVideoLoader = isLatest && isGeneratingVideo && message.content.includes('Generating');
+  
+  // Text-to-speech hook
+  const { speak, stop, isSpeaking, isPaused, toggleSpeaking, isSupported } = useSpeech({ rate: 0.95 });
   
   // Detect if this is story mode content (anime panels)
   const isStoryMode = message.content.includes('Story') || 
@@ -256,6 +260,46 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage, isGenerating
                   </>
                 )}
               </>
+            )}
+            
+            {/* Text-to-Speech Button for AI messages */}
+            {message.content && !showImageLoader && !showVideoLoader && isSupported && (
+              <div className="mt-3 pt-2 border-t border-border/20">
+                <div className="flex items-center gap-2">
+                  {!isSpeaking ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => speak(message.content)}
+                      className="gap-1.5 h-7 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" />
+                      Read Aloud
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={toggleSpeaking}
+                        className="gap-1.5 h-7 text-xs text-primary"
+                      >
+                        <Pause className="w-3.5 h-3.5" />
+                        {isPaused ? 'Resume' : 'Pause'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={stop}
+                        className="gap-1.5 h-7 text-xs text-muted-foreground hover:text-destructive"
+                      >
+                        <VolumeX className="w-3.5 h-3.5" />
+                        Stop
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         )}
