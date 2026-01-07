@@ -89,11 +89,13 @@ serve(async (req) => {
     const data = await response.json();
     console.log("Image generation response received");
     
-    // Extract image URL from chat completions response format
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    // Extract image URL - try multiple paths as API response format may vary
+    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url 
+      || data.choices?.[0]?.images?.[0]?.image_url?.url
+      || data.data?.[0]?.url;
     
     if (!imageUrl) {
-      console.error("No image URL in response");
+      console.error("No image URL in response:", JSON.stringify(data, null, 2));
       return new Response(
         JSON.stringify({ error: "Failed to generate visual content" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
