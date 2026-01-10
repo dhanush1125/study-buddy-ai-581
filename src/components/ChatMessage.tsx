@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { BookOpen, User, Download, Volume2, VolumeX, Pause } from "lucide-react";
+import { BookOpen, User, Download, Volume2, VolumeX, Pause, ChevronDown } from "lucide-react";
 import type { Message } from "@/hooks/useChat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -10,6 +10,13 @@ import { DownloadOptions } from "./DownloadOptions";
 import { ShareOptions } from "./ShareOptions";
 import { Button } from "./ui/button";
 import { useSpeech } from "@/hooks/useSpeech";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 interface ChatMessageProps {
   message: Message;
@@ -24,7 +31,14 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage, isGenerating
   const showVideoLoader = isLatest && isGeneratingVideo && message.content.includes('Generating');
   
   // Text-to-speech hook
-  const { speak, stop, isSpeaking, isPaused, toggleSpeaking, isSupported } = useSpeech({ rate: 0.95 });
+  const { speak, stop, isSpeaking, isPaused, toggleSpeaking, isSupported, voices, selectedVoice, setSelectedVoice } = useSpeech({ rate: 0.95 });
+  
+  // Get a short display name for a voice
+  const getVoiceDisplayName = (voice: SpeechSynthesisVoice) => {
+    const name = voice.name.replace(/Microsoft|Google|Apple|Amazon|Polly|Neural|Premium|Enhanced/gi, '').trim();
+    const shortName = name.split(' ').slice(0, 2).join(' ');
+    return `${shortName} (${voice.lang.split('-')[0]})`;
+  };
   
   // Detect if this is story mode content (anime panels)
   const isStoryMode = message.content.includes('Story') || 
@@ -265,17 +279,45 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage, isGenerating
             {/* Text-to-Speech Button for AI messages */}
             {message.content && !showImageLoader && !showVideoLoader && isSupported && (
               <div className="mt-3 pt-2 border-t border-border/20">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {!isSpeaking ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => speak(message.content)}
-                      className="gap-1.5 h-7 text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      <Volume2 className="w-3.5 h-3.5" />
-                      Read Aloud
-                    </Button>
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => speak(message.content)}
+                        className="gap-1.5 h-7 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                        Read Aloud
+                      </Button>
+                      
+                      {/* Voice Selection Dropdown */}
+                      {voices.length > 0 && (
+                        <Select
+                          value={selectedVoice?.name || ''}
+                          onValueChange={(value) => {
+                            const voice = voices.find(v => v.name === value);
+                            if (voice) setSelectedVoice(voice);
+                          }}
+                        >
+                          <SelectTrigger className="h-7 w-auto min-w-[120px] max-w-[180px] text-xs gap-1 bg-background/50">
+                            <SelectValue placeholder="Select voice" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[200px] bg-popover z-50">
+                            {voices.map((voice) => (
+                              <SelectItem 
+                                key={voice.name} 
+                                value={voice.name}
+                                className="text-xs"
+                              >
+                                {getVoiceDisplayName(voice)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </>
                   ) : (
                     <>
                       <Button
