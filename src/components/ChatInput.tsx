@@ -1,8 +1,9 @@
-import { useState, FormEvent, KeyboardEvent, useRef } from "react";
-import { Send, Square, ImagePlus, X, BookOpen, Compass, Video } from "lucide-react";
+import { useState, FormEvent, KeyboardEvent, useRef, useEffect } from "react";
+import { Send, Square, ImagePlus, X, BookOpen, Compass, Video, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 interface ChatInputProps {
   onSend: (message: string, imageBase64?: string, storyMode?: boolean, careerMode?: boolean, videoMode?: boolean) => void;
@@ -19,6 +20,39 @@ export const ChatInput = ({ onSend, onStop, isLoading, disabled }: ChatInputProp
   const [careerMode, setCareerMode] = useState(false);
   const [videoMode, setVideoMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Speech recognition hook
+  const { 
+    isListening, 
+    transcript, 
+    interimTranscript, 
+    startListening, 
+    stopListening, 
+    resetTranscript,
+    isSupported: isSpeechSupported 
+  } = useSpeechRecognition({ continuous: true });
+  
+  // Update input when transcript changes
+  useEffect(() => {
+    if (transcript) {
+      setInput(prev => {
+        // If we had previous input, add a space before the new transcript
+        if (prev && !prev.endsWith(' ')) {
+          return prev + ' ' + transcript;
+        }
+        return prev + transcript;
+      });
+      resetTranscript();
+    }
+  }, [transcript, resetTranscript]);
+
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -219,16 +253,52 @@ export const ChatInput = ({ onSend, onStop, isLoading, disabled }: ChatInputProp
           </Tooltip>
         </TooltipProvider>
 
+        {/* Speech-to-Text toggle */}
+        {isSpeechSupported && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={toggleListening}
+                  disabled={disabled || isLoading}
+                  className={cn(
+                    "flex-shrink-0 h-10 w-10 rounded-xl transition-all",
+                    isListening 
+                      ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 ring-2 ring-red-500/50 animate-pulse" 
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p className="font-medium">{isListening ? "Stop Recording" : "Voice Input"}</p>
+                <p className="text-xs text-muted-foreground">Speak instead of typing</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
         <textarea
-          value={input}
+          value={input + (interimTranscript ? (input ? ' ' : '') + interimTranscript : '')}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={imageBase64 ? "Add a message about this image..." : "Ask me anything about your studies..."}
+          placeholder={
+            isListening 
+              ? "Listening... speak now" 
+              : imageBase64 
+                ? "Add a message about this image..." 
+                : "Ask me anything about your studies..."
+          }
           disabled={disabled}
           rows={1}
           className={cn(
             "flex-1 resize-none bg-transparent px-3 py-2.5 text-[15px] placeholder:text-muted-foreground focus:outline-none",
-            "min-h-[44px] max-h-[120px] overflow-y-auto"
+            "min-h-[44px] max-h-[120px] overflow-y-auto",
+            isListening && "placeholder:text-red-400"
           )}
           style={{ height: "44px" }}
           onInput={(e) => {
