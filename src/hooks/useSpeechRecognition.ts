@@ -3,7 +3,6 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 interface UseSpeechRecognitionOptions {
   continuous?: boolean;
   interimResults?: boolean;
-  lang?: string;
 }
 
 interface SpeechRecognitionEvent {
@@ -37,11 +36,36 @@ declare global {
   }
 }
 
+// Popular languages for speech recognition
+export const SPEECH_LANGUAGES = [
+  { code: 'en-US', name: 'English (US)', flag: '🇺🇸' },
+  { code: 'en-GB', name: 'English (UK)', flag: '🇬🇧' },
+  { code: 'es-ES', name: 'Spanish', flag: '🇪🇸' },
+  { code: 'fr-FR', name: 'French', flag: '🇫🇷' },
+  { code: 'de-DE', name: 'German', flag: '🇩🇪' },
+  { code: 'it-IT', name: 'Italian', flag: '🇮🇹' },
+  { code: 'pt-BR', name: 'Portuguese (BR)', flag: '🇧🇷' },
+  { code: 'zh-CN', name: 'Chinese (Simplified)', flag: '🇨🇳' },
+  { code: 'ja-JP', name: 'Japanese', flag: '🇯🇵' },
+  { code: 'ko-KR', name: 'Korean', flag: '🇰🇷' },
+  { code: 'hi-IN', name: 'Hindi', flag: '🇮🇳' },
+  { code: 'ar-SA', name: 'Arabic', flag: '🇸🇦' },
+  { code: 'ru-RU', name: 'Russian', flag: '🇷🇺' },
+  { code: 'nl-NL', name: 'Dutch', flag: '🇳🇱' },
+  { code: 'pl-PL', name: 'Polish', flag: '🇵🇱' },
+  { code: 'tr-TR', name: 'Turkish', flag: '🇹🇷' },
+  { code: 'vi-VN', name: 'Vietnamese', flag: '🇻🇳' },
+  { code: 'th-TH', name: 'Thai', flag: '🇹🇭' },
+  { code: 'id-ID', name: 'Indonesian', flag: '🇮🇩' },
+  { code: 'ms-MY', name: 'Malay', flag: '🇲🇾' },
+];
+
 export const useSpeechRecognition = (options: UseSpeechRecognitionOptions = {}) => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [language, setLanguage] = useState('en-US');
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   
@@ -49,17 +73,16 @@ export const useSpeechRecognition = (options: UseSpeechRecognitionOptions = {}) 
   const isSupported = typeof window !== 'undefined' && 
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
-  // Initialize recognition
-  useEffect(() => {
-    if (!isSupported) return;
+  // Create new recognition instance with current language
+  const createRecognition = useCallback(() => {
+    if (!isSupported) return null;
 
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognitionRef.current = new SpeechRecognitionAPI();
+    const recognition = new SpeechRecognitionAPI();
     
-    const recognition = recognitionRef.current;
     recognition.continuous = options.continuous ?? false;
     recognition.interimResults = options.interimResults ?? true;
-    recognition.lang = options.lang ?? 'en-US';
+    recognition.lang = language;
 
     recognition.onstart = () => {
       setIsListening(true);
@@ -100,25 +123,42 @@ export const useSpeechRecognition = (options: UseSpeechRecognitionOptions = {}) 
       setInterimTranscript('');
     };
 
+    return recognition;
+  }, [isSupported, options.continuous, options.interimResults, language]);
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
-      recognition.abort();
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
     };
-  }, [isSupported, options.continuous, options.interimResults, options.lang]);
+  }, []);
 
   const startListening = useCallback(() => {
-    if (!recognitionRef.current || isListening) return;
+    if (isListening) return;
     
+    // Stop any existing recognition
+    if (recognitionRef.current) {
+      recognitionRef.current.abort();
+    }
+    
+    // Create new recognition with current language
+    const recognition = createRecognition();
+    if (!recognition) return;
+    
+    recognitionRef.current = recognition;
     setTranscript('');
     setInterimTranscript('');
     setError(null);
     
     try {
-      recognitionRef.current.start();
+      recognition.start();
     } catch (err) {
       console.error('Failed to start speech recognition:', err);
       setError('Failed to start speech recognition');
     }
-  }, [isListening]);
+  }, [isListening, createRecognition]);
 
   const stopListening = useCallback(() => {
     if (!recognitionRef.current || !isListening) return;
@@ -144,5 +184,8 @@ export const useSpeechRecognition = (options: UseSpeechRecognitionOptions = {}) 
     stopListening,
     resetTranscript,
     isSupported,
+    language,
+    setLanguage,
+    availableLanguages: SPEECH_LANGUAGES,
   };
 };

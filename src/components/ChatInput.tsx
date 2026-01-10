@@ -1,9 +1,16 @@
 import { useState, FormEvent, KeyboardEvent, useRef, useEffect } from "react";
-import { Send, Square, ImagePlus, X, BookOpen, Compass, Video, Mic, MicOff } from "lucide-react";
+import { Send, Square, ImagePlus, X, BookOpen, Compass, Video, Mic, MicOff, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 interface ChatInputProps {
   onSend: (message: string, imageBase64?: string, storyMode?: boolean, careerMode?: boolean, videoMode?: boolean) => void;
@@ -29,8 +36,14 @@ export const ChatInput = ({ onSend, onStop, isLoading, disabled }: ChatInputProp
     startListening, 
     stopListening, 
     resetTranscript,
-    isSupported: isSpeechSupported 
+    isSupported: isSpeechSupported,
+    language: speechLanguage,
+    setLanguage: setSpeechLanguage,
+    availableLanguages,
   } = useSpeechRecognition({ continuous: true });
+  
+  // Get current language display info
+  const currentLanguage = availableLanguages.find(l => l.code === speechLanguage) || availableLanguages[0];
   
   // Update input when transcript changes
   useEffect(() => {
@@ -255,31 +268,58 @@ export const ChatInput = ({ onSend, onStop, isLoading, disabled }: ChatInputProp
 
         {/* Speech-to-Text toggle */}
         {isSpeechSupported && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  onClick={toggleListening}
-                  disabled={disabled || isLoading}
-                  className={cn(
-                    "flex-shrink-0 h-10 w-10 rounded-xl transition-all",
-                    isListening 
-                      ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 ring-2 ring-red-500/50 animate-pulse" 
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p className="font-medium">{isListening ? "Stop Recording" : "Voice Input"}</p>
-                <p className="text-xs text-muted-foreground">Speak instead of typing</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={toggleListening}
+                    disabled={disabled || isLoading}
+                    className={cn(
+                      "flex-shrink-0 h-10 w-10 rounded-xl transition-all",
+                      isListening 
+                        ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 ring-2 ring-red-500/50 animate-pulse" 
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p className="font-medium">{isListening ? "Stop Recording" : "Voice Input"}</p>
+                  <p className="text-xs text-muted-foreground">Speak instead of typing ({currentLanguage.name})</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* Language Selection Dropdown */}
+            <Select
+              value={speechLanguage}
+              onValueChange={setSpeechLanguage}
+              disabled={isListening || disabled || isLoading}
+            >
+              <SelectTrigger className="h-10 w-auto min-w-[70px] max-w-[90px] text-xs gap-1 bg-background/50 rounded-xl border-0 hover:bg-accent/50">
+                <span className="text-base">{currentLanguage.flag}</span>
+              </SelectTrigger>
+              <SelectContent className="max-h-[280px] bg-popover z-50">
+                {availableLanguages.map((lang) => (
+                  <SelectItem 
+                    key={lang.code} 
+                    value={lang.code}
+                    className="text-sm"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>{lang.flag}</span>
+                      <span>{lang.name}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
         )}
 
         <textarea
