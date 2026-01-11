@@ -10,7 +10,7 @@ import { WelcomeMessage } from "@/components/WelcomeMessage";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { ProgressTracker } from "@/components/ProgressTracker";
 import { QuickRevisionDialog } from "@/components/QuickRevisionDialog";
-import { BookOpen, Menu, TrendingUp, Zap } from "lucide-react";
+import { BookOpen, Menu, TrendingUp, Zap, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
@@ -186,6 +186,14 @@ Keep it stress-free and focused!`;
               >
                 <TrendingUp className="w-4 h-4" />
                 <span className="hidden sm:inline">Progress</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/settings")}
+                className="h-8 w-8"
+              >
+                <Settings className="w-4 h-4" />
               </Button>
             </div>
           </div>
