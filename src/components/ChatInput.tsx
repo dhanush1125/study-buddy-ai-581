@@ -17,9 +17,11 @@ interface ChatInputProps {
   onStop?: () => void;
   isLoading?: boolean;
   disabled?: boolean;
+  savedLanguage?: string;
+  onLanguageChange?: (lang: string) => void;
 }
 
-export const ChatInput = ({ onSend, onStop, isLoading, disabled }: ChatInputProps) => {
+export const ChatInput = ({ onSend, onStop, isLoading, disabled, savedLanguage, onLanguageChange }: ChatInputProps) => {
   const [input, setInput] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -41,6 +43,19 @@ export const ChatInput = ({ onSend, onStop, isLoading, disabled }: ChatInputProp
     setLanguage: setSpeechLanguage,
     availableLanguages,
   } = useSpeechRecognition({ continuous: true });
+  
+  // Sync with saved language preference
+  useEffect(() => {
+    if (savedLanguage && savedLanguage !== speechLanguage) {
+      setSpeechLanguage(savedLanguage);
+    }
+  }, [savedLanguage]);
+  
+  // Handle language change and save to preferences
+  const handleLanguageChange = (lang: string) => {
+    setSpeechLanguage(lang);
+    onLanguageChange?.(lang);
+  };
   
   // Get current language display info
   const currentLanguage = availableLanguages.find(l => l.code === speechLanguage) || availableLanguages[0];
@@ -298,7 +313,7 @@ export const ChatInput = ({ onSend, onStop, isLoading, disabled }: ChatInputProp
             {/* Language Selection Dropdown */}
             <Select
               value={speechLanguage}
-              onValueChange={setSpeechLanguage}
+              onValueChange={handleLanguageChange}
               disabled={isListening || disabled || isLoading}
             >
               <SelectTrigger className="h-10 w-auto min-w-[70px] max-w-[90px] text-xs gap-1 bg-background/50 rounded-xl border-0 hover:bg-accent/50">

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useChat } from "@/hooks/useChat";
 import { useConversations } from "@/hooks/useConversations";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { WelcomeMessage } from "@/components/WelcomeMessage";
@@ -19,6 +20,14 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
   const [revisionOpen, setRevisionOpen] = useState(false);
+  
+  // User preferences for voice settings
+  const { 
+    preferences, 
+    isLoading: preferencesLoading,
+    setSpeechLanguage,
+    setTtsVoiceName,
+  } = useUserPreferences();
   const {
     conversations,
     loading: conversationsLoading,
@@ -200,6 +209,8 @@ Keep it stress-free and focused!`;
                     isLatest={index === messages.length - 1 && message.role === "assistant"}
                     isGeneratingImage={isGeneratingImage}
                     isGeneratingVideo={isGeneratingVideo}
+                    savedVoiceName={preferences.ttsVoiceName}
+                    onVoiceChange={setTtsVoiceName}
                   />
                 ))}
               </div>
@@ -215,6 +226,8 @@ Keep it stress-free and focused!`;
               onSend={handleSendMessage}
               onStop={stopGeneration}
               isLoading={isLoading}
+              savedLanguage={preferences.speechLanguage}
+              onLanguageChange={setSpeechLanguage}
             />
             <p className="text-xs text-muted-foreground text-center mt-2">
               StudyBuddy can make mistakes. Verify important information.

@@ -10,6 +10,7 @@ import { DownloadOptions } from "./DownloadOptions";
 import { ShareOptions } from "./ShareOptions";
 import { Button } from "./ui/button";
 import { useSpeech } from "@/hooks/useSpeech";
+import { useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -23,15 +24,36 @@ interface ChatMessageProps {
   isLatest?: boolean;
   isGeneratingImage?: boolean;
   isGeneratingVideo?: boolean;
+  savedVoiceName?: string | null;
+  onVoiceChange?: (name: string | null) => void;
 }
 
-export const ChatMessage = ({ message, isLatest, isGeneratingImage, isGeneratingVideo }: ChatMessageProps) => {
+export const ChatMessage = ({ message, isLatest, isGeneratingImage, isGeneratingVideo, savedVoiceName, onVoiceChange }: ChatMessageProps) => {
   const isUser = message.role === "user";
   const showImageLoader = isLatest && isGeneratingImage && message.content.includes('Generating');
   const showVideoLoader = isLatest && isGeneratingVideo && message.content.includes('Generating');
   
   // Text-to-speech hook
   const { speak, stop, isSpeaking, isPaused, toggleSpeaking, isSupported, voices, selectedVoice, setSelectedVoice } = useSpeech({ rate: 0.95 });
+  
+  // Sync with saved voice preference when voices are loaded
+  useEffect(() => {
+    if (savedVoiceName && voices.length > 0 && selectedVoice?.name !== savedVoiceName) {
+      const voice = voices.find(v => v.name === savedVoiceName);
+      if (voice) {
+        setSelectedVoice(voice);
+      }
+    }
+  }, [savedVoiceName, voices, selectedVoice?.name, setSelectedVoice]);
+  
+  // Handle voice change and save to preferences
+  const handleVoiceChange = (voiceName: string) => {
+    const voice = voices.find(v => v.name === voiceName);
+    if (voice) {
+      setSelectedVoice(voice);
+      onVoiceChange?.(voiceName);
+    }
+  };
   
   // Get a short display name for a voice
   const getVoiceDisplayName = (voice: SpeechSynthesisVoice) => {
@@ -296,10 +318,7 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage, isGenerating
                       {voices.length > 0 && (
                         <Select
                           value={selectedVoice?.name || ''}
-                          onValueChange={(value) => {
-                            const voice = voices.find(v => v.name === value);
-                            if (voice) setSelectedVoice(voice);
-                          }}
+                          onValueChange={handleVoiceChange}
                         >
                           <SelectTrigger className="h-7 w-auto min-w-[120px] max-w-[180px] text-xs gap-1 bg-background/50">
                             <SelectValue placeholder="Select voice" />
