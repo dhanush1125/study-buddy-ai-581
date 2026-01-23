@@ -1,24 +1,49 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Loader2 } from "lucide-react";
+import { BookOpen, Loader2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_DURATION = 60000; // 1 minute in ms
+
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const [remainingLockout, setRemainingLockout] = useState(0);
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const isLockedOut = lockoutUntil !== null && Date.now() < lockoutUntil;
+
+  // Update remaining lockout time
+  useEffect(() => {
+    if (!lockoutUntil) return;
+    
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, lockoutUntil - Date.now());
+      setRemainingLockout(Math.ceil(remaining / 1000));
+      
+      if (remaining <= 0) {
+        setLockoutUntil(null);
+        setFailedAttempts(0);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [lockoutUntil]);
 
   useEffect(() => {
     if (user) {
@@ -39,8 +64,27 @@ const Auth = () => {
     }
   };
 
+  const handleFailedLogin = useCallback(() => {
+    const newAttempts = failedAttempts + 1;
+    setFailedAttempts(newAttempts);
+    
+    if (newAttempts >= MAX_ATTEMPTS) {
+      const lockoutEnd = Date.now() + LOCKOUT_DURATION;
+      setLockoutUntil(lockoutEnd);
+      toast.error(`Too many failed attempts. Please wait 1 minute before trying again.`);
+    } else {
+      const remaining = MAX_ATTEMPTS - newAttempts;
+      toast.error(`Invalid email or password. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`);
+    }
+  }, [failedAttempts]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isLockedOut) {
+      toast.error(`Please wait ${remainingLockout} seconds before trying again.`);
+      return;
+    }
     
     if (!validateInputs()) return;
 
@@ -55,13 +99,16 @@ const Auth = () => {
 
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
-            toast.error("Invalid email or password");
+            handleFailedLogin();
           } else {
             toast.error(error.message);
           }
           return;
         }
 
+        // Reset on successful login
+        setFailedAttempts(0);
+        setLockoutUntil(null);
         toast.success("Welcome back!");
         navigate("/");
       } else {
@@ -139,9 +186,16 @@ const Auth = () => {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            {isLockedOut && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+                <span>Too many attempts. Try again in {remainingLockout}s</span>
+              </div>
+            )}
+
+            <Button type="submit" className="w-full" disabled={loading || isLockedOut}>
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {isLogin ? "Sign In" : "Sign Up"}
+              {isLockedOut ? `Locked (${remainingLockout}s)` : isLogin ? "Sign In" : "Sign Up"}
             </Button>
           </form>
 
