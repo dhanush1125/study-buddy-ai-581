@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { BookOpen, Loader2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import TurnstileCaptcha from "@/components/TurnstileCaptcha";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 
 const MAX_ATTEMPTS = 5;
+const CAPTCHA_THRESHOLD = 3; // Show CAPTCHA after this many failed attempts
 const LOCKOUT_DURATION = 60000; // 1 minute in ms
 
 const Auth = () => {
@@ -23,10 +25,13 @@ const Auth = () => {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
   const [remainingLockout, setRemainingLockout] = useState(0);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const isLockedOut = lockoutUntil !== null && Date.now() < lockoutUntil;
+  const requiresCaptcha = isLogin && failedAttempts >= CAPTCHA_THRESHOLD && !captchaVerified;
 
   // Update remaining lockout time
   useEffect(() => {
@@ -39,6 +44,8 @@ const Auth = () => {
       if (remaining <= 0) {
         setLockoutUntil(null);
         setFailedAttempts(0);
+        setCaptchaVerified(false);
+        setCaptchaToken(null);
       }
     }, 1000);
 
@@ -64,6 +71,33 @@ const Auth = () => {
     }
   };
 
+  const handleCaptchaVerify = useCallback(async (token: string) => {
+    setCaptchaToken(token);
+    
+    try {
+      const response = await supabase.functions.invoke("verify-turnstile", {
+        body: { token },
+      });
+
+      if (response.data?.success) {
+        setCaptchaVerified(true);
+        toast.success("Verification successful! You can now sign in.");
+      } else {
+        toast.error("CAPTCHA verification failed. Please try again.");
+        setCaptchaToken(null);
+      }
+    } catch (error) {
+      toast.error("Failed to verify CAPTCHA. Please try again.");
+      setCaptchaToken(null);
+    }
+  }, []);
+
+  const handleCaptchaExpire = useCallback(() => {
+    setCaptchaToken(null);
+    setCaptchaVerified(false);
+    toast.info("CAPTCHA expired. Please complete it again.");
+  }, []);
+
   const handleFailedLogin = useCallback(() => {
     const newAttempts = failedAttempts + 1;
     setFailedAttempts(newAttempts);
@@ -72,9 +106,11 @@ const Auth = () => {
       const lockoutEnd = Date.now() + LOCKOUT_DURATION;
       setLockoutUntil(lockoutEnd);
       toast.error(`Too many failed attempts. Please wait 1 minute before trying again.`);
+    } else if (newAttempts >= CAPTCHA_THRESHOLD) {
+      toast.error(`Invalid credentials. Please complete the CAPTCHA to continue.`);
     } else {
-      const remaining = MAX_ATTEMPTS - newAttempts;
-      toast.error(`Invalid email or password. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`);
+      const remaining = CAPTCHA_THRESHOLD - newAttempts;
+      toast.error(`Invalid email or password. ${remaining} attempt${remaining === 1 ? '' : 's'} before CAPTCHA required.`);
     }
   }, [failedAttempts]);
 
@@ -83,6 +119,11 @@ const Auth = () => {
     
     if (isLockedOut) {
       toast.error(`Please wait ${remainingLockout} seconds before trying again.`);
+      return;
+    }
+
+    if (requiresCaptcha) {
+      toast.error("Please complete the CAPTCHA verification first.");
       return;
     }
     
@@ -100,6 +141,9 @@ const Auth = () => {
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
             handleFailedLogin();
+            // Reset captcha verification on failed login
+            setCaptchaVerified(false);
+            setCaptchaToken(null);
           } else {
             toast.error(error.message);
           }
@@ -109,6 +153,8 @@ const Auth = () => {
         // Reset on successful login
         setFailedAttempts(0);
         setLockoutUntil(null);
+        setCaptchaVerified(false);
+        setCaptchaToken(null);
         toast.success("Welcome back!");
         navigate("/");
       } else {
@@ -186,6 +232,19 @@ const Auth = () => {
               />
             </div>
 
+            {requiresCaptcha && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground text-center">
+                  Please verify you're human to continue
+                </p>
+                <TurnstileCaptcha
+                  onVerify={handleCaptchaVerify}
+                  onExpire={handleCaptchaExpire}
+                  onError={() => toast.error("CAPTCHA error. Please refresh and try again.")}
+                />
+              </div>
+            )}
+
             {isLockedOut && (
               <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
                 <ShieldAlert className="w-4 h-4 flex-shrink-0" />
@@ -193,7 +252,7 @@ const Auth = () => {
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading || isLockedOut}>
+            <Button type="submit" className="w-full" disabled={loading || isLockedOut || requiresCaptcha}>
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {isLockedOut ? `Locked (${remainingLockout}s)` : isLogin ? "Sign In" : "Sign Up"}
             </Button>
