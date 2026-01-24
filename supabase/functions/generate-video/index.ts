@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, style } = await req.json();
+    const { prompt, style, duration = 5 } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -23,52 +23,50 @@ serve(async (req) => {
     }
 
     console.log("Video generation requested with prompt:", prompt);
-    console.log("Note: Video generation API not available, falling back to animated image generation");
+    console.log("Style:", style, "Duration:", duration);
 
-    // Parse video style
-    let videoStyle = style?.toUpperCase() || "CONCEPT";
+    // Parse video style and build enhanced prompt
+    const videoStyle = style?.toUpperCase() || "CONCEPT";
     
-    // Build style-specific prompt for image generation (as fallback)
     let styleHint = "";
     switch (videoStyle) {
       case "ANIME":
-        styleHint = "Anime style illustration, soft colors, expressive characters, educational setting, studio-quality, clean line art, dynamic pose suggesting motion";
+        styleHint = "Anime style animation with soft colors, expressive movements, educational setting, studio-quality visuals";
         break;
       case "3D":
-        styleHint = "3D rendered visualization, isometric view, soft lighting, clean geometry, professional quality, depth and dimension";
+        styleHint = "3D rendered animation with isometric view, soft lighting, clean geometry, professional quality";
         break;
       case "REVISION":
-        styleHint = "Clean educational diagram, labeled sections, minimal colors, white background, exam-focused, clear annotations and arrows";
+        styleHint = "Clean educational animation with labeled sections, minimal colors, exam-focused, clear annotations";
         break;
       case "CONCEPT":
       default:
-        styleHint = "Educational infographic, clear step-by-step visual flow, beginner-friendly icons, professional quality, arrows showing process";
+        styleHint = "Educational animated infographic with step-by-step visual flow, beginner-friendly, professional quality";
         break;
     }
 
-    // Generate an educational image instead (video not supported)
-    const fullPrompt = `Create a detailed educational illustration: ${styleHint}. Content: ${prompt}. High resolution, clear focus, no clutter, visually engaging for students.`;
-    console.log("Generating educational image with prompt:", fullPrompt);
+    // Build video generation prompt
+    const fullPrompt = `${styleHint}. ${prompt}. Smooth animation, educational content, engaging visuals for students.`;
+    console.log("Generating video with prompt:", fullPrompt);
 
-    // Use chat completions endpoint with image modality
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Use Lovable video generation API
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/videos/generations", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        messages: [
-          { role: "user", content: fullPrompt }
-        ],
-        modalities: ["image", "text"],
+        model: "veo-2.0-generate-001",
+        prompt: fullPrompt,
+        aspect_ratio: "16:9",
+        duration: Math.min(duration, 10), // Max 10 seconds
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Image generation error:", response.status, errorText);
+      console.error("Video generation error:", response.status, errorText);
       
       if (response.status === 429) {
         return new Response(
@@ -83,34 +81,31 @@ serve(async (req) => {
         );
       }
       
-      throw new Error(`Image generation failed: ${response.status}`);
+      throw new Error(`Video generation failed: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log("Image generation response received");
+    console.log("Video generation response received:", JSON.stringify(data, null, 2));
     
-    // Extract image URL - try multiple paths as API response format may vary
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url 
-      || data.choices?.[0]?.images?.[0]?.image_url?.url
-      || data.data?.[0]?.url;
+    // Extract video URL from response
+    const videoUrl = data.data?.[0]?.url || data.url || data.video_url;
     
-    if (!imageUrl) {
-      console.error("No image URL in response:", JSON.stringify(data, null, 2));
+    if (!videoUrl) {
+      console.error("No video URL in response:", JSON.stringify(data, null, 2));
       return new Response(
-        JSON.stringify({ error: "Failed to generate visual content" }),
+        JSON.stringify({ error: "Failed to generate video - no URL in response" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Educational image successfully generated");
+    console.log("Video successfully generated:", videoUrl);
     
-    // Return as image (since video isn't supported)
     return new Response(
       JSON.stringify({ 
-        imageUrl, 
+        videoUrl, 
         style: videoStyle,
-        type: "image",
-        message: "Video generation is not currently available. Here's an educational illustration instead."
+        type: "video",
+        duration: duration
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

@@ -94,6 +94,8 @@ const generateImage = async (prompt: string): Promise<string | null> => {
 // Generate a video using the edge function
 const generateVideo = async (prompt: string, style: string = "CONCEPT"): Promise<string | null> => {
   try {
+    console.log("Starting video generation with prompt:", prompt, "style:", style);
+    
     const response = await fetch(VIDEO_GEN_URL, {
       method: "POST",
       headers: {
@@ -104,14 +106,33 @@ const generateVideo = async (prompt: string, style: string = "CONCEPT"): Promise
     });
 
     if (!response.ok) {
-      console.error("Video generation failed:", response.status);
+      const errorData = await response.json().catch(() => ({}));
+      console.error("Video generation failed:", response.status, errorData);
+      
+      if (response.status === 429) {
+        toast.error("Video generation rate limited. Please try again later.");
+      } else if (response.status === 402) {
+        toast.error("Video generation requires credits. Please add funds.");
+      }
       return null;
     }
 
     const data = await response.json();
-    return data.videoUrl || null;
+    console.log("Video generation response:", data);
+    
+    // Handle video URL from response
+    const videoUrl = data.videoUrl || data.video_url || data.url;
+    
+    if (videoUrl) {
+      console.log("Video generated successfully:", videoUrl);
+      return videoUrl;
+    }
+    
+    console.error("No video URL in response:", data);
+    return null;
   } catch (error) {
     console.error("Video generation error:", error);
+    toast.error("Failed to generate video. Please try again.");
     return null;
   }
 };
