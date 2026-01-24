@@ -19,6 +19,7 @@ const LOCKOUT_DURATION = 60000; // 1 minute in ms
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,7 +32,7 @@ const Auth = () => {
   const { user } = useAuth();
 
   const isLockedOut = lockoutUntil !== null && Date.now() < lockoutUntil;
-  const requiresCaptcha = isLogin && failedAttempts >= CAPTCHA_THRESHOLD && !captchaVerified;
+  const requiresCaptcha = isLogin && !isForgotPassword && failedAttempts >= CAPTCHA_THRESHOLD && !captchaVerified;
 
   // Update remaining lockout time
   useEffect(() => {
@@ -113,6 +114,39 @@ const Auth = () => {
       toast.error(`Invalid email or password. ${remaining} attempt${remaining === 1 ? '' : 's'} before CAPTCHA required.`);
     }
   }, [failedAttempts]);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      emailSchema.parse(email);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      }
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success("Password reset link sent! Check your email.");
+      setIsForgotPassword(false);
+    } catch (error) {
+      toast.error("Failed to send reset link. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,74 +236,126 @@ const Auth = () => {
         {/* Auth Form */}
         <div className="bg-card rounded-2xl p-6 shadow-card border border-border">
           <h2 className="text-xl font-semibold text-foreground mb-6 text-center">
-            {isLogin ? "Welcome Back" : "Create Account"}
+            {isForgotPassword ? "Reset Password" : isLogin ? "Welcome Back" : "Create Account"}
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-
-            {requiresCaptcha && (
+          {isForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground text-center">
-                  Please verify you're human to continue
-                </p>
-                <TurnstileCaptcha
-                  onVerify={handleCaptchaVerify}
-                  onExpire={handleCaptchaExpire}
-                  onError={() => toast.error("CAPTCHA error. Please refresh and try again.")}
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loading}
                 />
               </div>
-            )}
 
-            {isLockedOut && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-                <ShieldAlert className="w-4 h-4 flex-shrink-0" />
-                <span>Too many attempts. Try again in {remainingLockout}s</span>
+              <p className="text-sm text-muted-foreground">
+                Enter your email and we'll send you a link to reset your password.
+              </p>
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Send Reset Link
+              </Button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsForgotPassword(false)}
+                  className="text-sm text-primary hover:underline"
+                  disabled={loading}
+                >
+                  Back to Sign In
+                </button>
               </div>
-            )}
+            </form>
+          ) : (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
 
-            <Button type="submit" className="w-full" disabled={loading || isLockedOut || requiresCaptcha}>
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {isLockedOut ? `Locked (${remainingLockout}s)` : isLogin ? "Sign In" : "Sign Up"}
-            </Button>
-          </form>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-primary hover:underline"
-              disabled={loading}
-            >
-              {isLogin
-                ? "Don't have an account? Sign up"
-                : "Already have an account? Sign in"}
-            </button>
-          </div>
+                {isLogin && (
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotPassword(true)}
+                      className="text-sm text-primary hover:underline"
+                      disabled={loading}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
+
+                {requiresCaptcha && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground text-center">
+                      Please verify you're human to continue
+                    </p>
+                    <TurnstileCaptcha
+                      onVerify={handleCaptchaVerify}
+                      onExpire={handleCaptchaExpire}
+                      onError={() => toast.error("CAPTCHA error. Please refresh and try again.")}
+                    />
+                  </div>
+                )}
+
+                {isLockedOut && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                    <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+                    <span>Too many attempts. Try again in {remainingLockout}s</span>
+                  </div>
+                )}
+
+                <Button type="submit" className="w-full" disabled={loading || isLockedOut || requiresCaptcha}>
+                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  {isLockedOut ? `Locked (${remainingLockout}s)` : isLogin ? "Sign In" : "Sign Up"}
+                </Button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="text-sm text-primary hover:underline"
+                  disabled={loading}
+                >
+                  {isLogin
+                    ? "Don't have an account? Sign up"
+                    : "Already have an account? Sign in"}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
