@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { StoryPanelGrid } from "./StoryPanelGrid";
+import { VideoPlayer } from "./VideoPlayer";
 import { DownloadOptions } from "./DownloadOptions";
 import { ShareOptions } from "./ShareOptions";
 import { Button } from "./ui/button";
@@ -263,14 +264,10 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage, isGenerating
                     <div className="mt-3 space-y-3">
                       {message.generatedVideos.map((videoUrl, idx) => (
                         <div key={idx} className="rounded-lg overflow-hidden border border-border/50 bg-background/50">
-                          <video
+                          <VideoPlayer
                             src={videoUrl}
-                            controls
                             className="w-full h-auto max-h-96"
-                            preload="metadata"
-                          >
-                            Your browser does not support the video tag.
-                          </video>
+                          />
                         </div>
                       ))}
                     </div>
