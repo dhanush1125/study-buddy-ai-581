@@ -16,7 +16,18 @@ const isExternalUrl = (url: string) => {
   }
 };
 
-const extractVideoFrame = (videoUrl: string): Promise<string> => {
+const formatDuration = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+interface VideoMetadata {
+  thumbnail: string | null;
+  duration: number | null;
+}
+
+const extractVideoMetadata = (videoUrl: string): Promise<VideoMetadata> => {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
 
@@ -29,6 +40,12 @@ const extractVideoFrame = (videoUrl: string): Promise<string> => {
     video.muted = true;
     video.playsInline = true;
     video.preload = "metadata";
+
+    let duration: number | null = null;
+
+    video.onloadedmetadata = () => {
+      duration = video.duration;
+    };
 
     video.onloadeddata = () => {
       video.currentTime = 1; // Seek to the first second for a better frame
@@ -44,20 +61,20 @@ const extractVideoFrame = (videoUrl: string): Promise<string> => {
         if (ctx) {
           ctx.drawImage(video, 0, 0);
           const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
-          resolve(dataUrl);
+          resolve({ thumbnail: dataUrl, duration });
         } else {
-          reject(new Error("Canvas context unavailable"));
+          resolve({ thumbnail: null, duration });
         }
       } catch (error) {
-        // CORS blocked canvas export - fallback to no thumbnail
-        reject(new Error("CORS blocked canvas export"));
+        // CORS blocked canvas export - fallback to no thumbnail but keep duration
+        resolve({ thumbnail: null, duration });
       }
     };
 
     video.onerror = () => reject(new Error("Video load failed"));
 
     // Timeout fallback
-    setTimeout(() => reject(new Error("Thumbnail extraction timeout")), 10000);
+    setTimeout(() => reject(new Error("Metadata extraction timeout")), 10000);
   });
 };
 
@@ -65,22 +82,24 @@ export const VideoPlayer = ({ src, className }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [duration, setDuration] = useState<number | null>(null);
   const [isLoadingThumbnail, setIsLoadingThumbnail] = useState(true);
   const [thumbnailError, setThumbnailError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadThumbnail = async () => {
+    const loadMetadata = async () => {
       setIsLoadingThumbnail(true);
       try {
-        const frame = await extractVideoFrame(src);
+        const metadata = await extractVideoMetadata(src);
         if (isMounted) {
-          setThumbnail(frame);
-          setThumbnailError(false);
+          setThumbnail(metadata.thumbnail);
+          setDuration(metadata.duration);
+          setThumbnailError(!metadata.thumbnail);
         }
       } catch (error) {
-        console.warn("Thumbnail extraction failed:", error);
+        console.warn("Metadata extraction failed:", error);
         if (isMounted) {
           setThumbnailError(true);
         }
@@ -91,7 +110,7 @@ export const VideoPlayer = ({ src, className }: VideoPlayerProps) => {
       }
     };
 
-    loadThumbnail();
+    loadMetadata();
 
     return () => {
       isMounted = false;
@@ -149,6 +168,13 @@ export const VideoPlayer = ({ src, className }: VideoPlayerProps) => {
           </div>
         )}
       </AspectRatio>
+      
+      {/* Duration badge */}
+      {duration !== null && !isLoadingThumbnail && (
+        <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-white text-xs font-medium">
+          {formatDuration(duration)}
+        </div>
+      )}
       
       {/* Play button overlay */}
       <div className="absolute inset-0 flex items-center justify-center">
