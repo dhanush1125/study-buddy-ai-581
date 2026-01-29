@@ -15,8 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Volume2, Mic, Settings2, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Volume2, Mic, Settings2, Check, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
+import { AvatarBuilder, AvatarPreview, defaultAvatarConfig } from "@/components/avatar";
+import type { AvatarConfig } from "@/components/avatar";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -26,7 +28,11 @@ const SettingsPage = () => {
     isLoading: preferencesLoading, 
     isSaving,
     savePreferences,
+    saveAvatarConfig,
+    getAvatarConfig,
   } = useUserPreferences();
+  
+  const [isAvatarSaving, setIsAvatarSaving] = useState(false);
   
   const { voices, speak, stop, isSpeaking } = useSpeech({ rate: preferences.ttsRate });
   
@@ -67,6 +73,13 @@ const SettingsPage = () => {
     });
     setHasChanges(false);
     toast.success("Settings saved successfully!");
+  };
+
+  const handleAvatarSave = async (config: AvatarConfig) => {
+    setIsAvatarSaving(true);
+    await saveAvatarConfig(config);
+    setIsAvatarSaving(false);
+    toast.success("Avatar saved successfully!");
   };
 
   const handleTestVoice = () => {
@@ -145,6 +158,26 @@ const SettingsPage = () => {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {/* Avatar Customization */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5 text-primary" />
+              Your Avatar
+            </CardTitle>
+            <CardDescription>
+              Create your custom avatar with face, hair, eyes, and accessories
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AvatarBuilder
+              initialConfig={getAvatarConfig()}
+              onSave={handleAvatarSave}
+              isSaving={isAvatarSaving}
+            />
+          </CardContent>
+        </Card>
+
         {/* Speech Recognition Settings */}
         <Card>
           <CardHeader>
