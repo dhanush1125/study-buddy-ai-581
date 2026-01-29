@@ -12,6 +12,7 @@ import { ProgressTracker } from "@/components/ProgressTracker";
 import { QuickRevisionDialog } from "@/components/QuickRevisionDialog";
 import { BookOpen, Menu, TrendingUp, Zap, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AvatarPreview } from "@/components/avatar";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ const Index = () => {
     isLoading: preferencesLoading,
     setSpeechLanguage,
     setTtsVoiceName,
+    getAvatarConfig,
   } = useUserPreferences();
   const {
     conversations,
@@ -191,9 +193,10 @@ Keep it stress-free and focused!`;
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate("/settings")}
-                className="h-8 w-8"
+                className="h-9 w-9 p-0 rounded-full overflow-hidden"
+                title="Settings"
               >
-                <Settings className="w-4 h-4" />
+                <AvatarPreview config={getAvatarConfig()} size={36} />
               </Button>
             </div>
           </div>

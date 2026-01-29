@@ -138,6 +138,7 @@ export type Database = {
       }
       user_preferences: {
         Row: {
+          avatar_config: Json | null
           created_at: string
           id: string
           speech_language: string
@@ -147,6 +148,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          avatar_config?: Json | null
           created_at?: string
           id?: string
           speech_language?: string
@@ -156,6 +158,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          avatar_config?: Json | null
           created_at?: string
           id?: string
           speech_language?: string

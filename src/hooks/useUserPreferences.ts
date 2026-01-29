@@ -1,17 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import type { AvatarConfig } from '@/components/avatar';
+import { defaultAvatarConfig } from '@/components/avatar';
 
 interface UserPreferences {
   speechLanguage: string;
   ttsVoiceName: string | null;
   ttsRate: number;
+  avatarConfig: AvatarConfig | null;
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
   speechLanguage: 'en-US',
   ttsVoiceName: null,
   ttsRate: 0.95,
+  avatarConfig: null,
 };
 
 export const useUserPreferences = () => {
@@ -32,7 +36,7 @@ export const useUserPreferences = () => {
       try {
         const { data, error } = await supabase
           .from('user_preferences')
-          .select('speech_language, tts_voice_name, tts_rate')
+          .select('speech_language, tts_voice_name, tts_rate, avatar_config')
           .eq('user_id', user.id)
           .single();
 
@@ -46,6 +50,7 @@ export const useUserPreferences = () => {
             speechLanguage: data.speech_language,
             ttsVoiceName: data.tts_voice_name,
             ttsRate: Number(data.tts_rate),
+            avatarConfig: data.avatar_config as unknown as AvatarConfig | null,
           });
         }
       } catch (err) {
@@ -67,14 +72,18 @@ export const useUserPreferences = () => {
     setIsSaving(true);
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const upsertData: any = {
+        user_id: user.id,
+        speech_language: updatedPrefs.speechLanguage,
+        tts_voice_name: updatedPrefs.ttsVoiceName,
+        tts_rate: updatedPrefs.ttsRate,
+        avatar_config: updatedPrefs.avatarConfig,
+      };
+      
       const { error } = await supabase
         .from('user_preferences')
-        .upsert({
-          user_id: user.id,
-          speech_language: updatedPrefs.speechLanguage,
-          tts_voice_name: updatedPrefs.ttsVoiceName,
-          tts_rate: updatedPrefs.ttsRate,
-        }, {
+        .upsert(upsertData, {
           onConflict: 'user_id',
         });
 
@@ -88,13 +97,21 @@ export const useUserPreferences = () => {
     }
   }, [user, preferences]);
 
+  // Save avatar config specifically
+  const saveAvatarConfig = useCallback(async (avatarConfig: AvatarConfig) => {
+    await savePreferences({ avatarConfig });
+  }, [savePreferences]);
+
   return {
     preferences,
     isLoading,
     isSaving,
     savePreferences,
+    saveAvatarConfig,
     setSpeechLanguage: (lang: string) => savePreferences({ speechLanguage: lang }),
     setTtsVoiceName: (name: string | null) => savePreferences({ ttsVoiceName: name }),
     setTtsRate: (rate: number) => savePreferences({ ttsRate: rate }),
+    // Get avatar config with fallback to default
+    getAvatarConfig: () => preferences.avatarConfig || defaultAvatarConfig,
   };
 };
