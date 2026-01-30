@@ -11,7 +11,7 @@ import { DownloadOptions } from "./DownloadOptions";
 import { ShareOptions } from "./ShareOptions";
 import { Button } from "./ui/button";
 import { useSpeech } from "@/hooks/useSpeech";
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Select,
   SelectContent,
@@ -19,6 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { InteractiveQuestion, QuestionFeedback } from "./InteractiveQuestion";
+import { TeacherAvatar } from "./avatar/TeacherAvatar";
+import { defaultAvatarConfig, AvatarConfig } from "./avatar/avatarParts";
 
 interface ChatMessageProps {
   message: Message;
@@ -33,6 +36,57 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage, isGenerating
   const isUser = message.role === "user";
   const showImageLoader = isLatest && isGeneratingImage && message.content.includes('Generating');
   const showVideoLoader = isLatest && isGeneratingVideo && message.content.includes('Generating');
+  
+  // Interactive question state
+  const [questionFeedback, setQuestionFeedback] = useState<QuestionFeedback>(null);
+  const [questionAnswered, setQuestionAnswered] = useState(false);
+  
+  // Parse quick check questions from content
+  const parsedContent = useMemo(() => {
+    const questionRegex = /\[QUICK_CHECK:\s*([^\|]+)\|?([^\|]*)\|?([^\]]*)\]/;
+    const match = message.content.match(questionRegex);
+    
+    if (match) {
+      return {
+        hasQuestion: true,
+        question: match[1].trim(),
+        hint: match[2]?.trim() || undefined,
+        correctAnswer: match[3]?.trim() || undefined,
+        cleanContent: message.content.replace(questionRegex, '').trim(),
+      };
+    }
+    
+    return {
+      hasQuestion: false,
+      question: '',
+      hint: undefined,
+      correctAnswer: undefined,
+      cleanContent: message.content,
+    };
+  }, [message.content]);
+  
+  // Handle answer submission
+  const handleQuestionAnswer = (answer: string) => {
+    const correct = parsedContent.correctAnswer?.toLowerCase().trim() || '';
+    const userAnswer = answer.toLowerCase().trim();
+    
+    let feedback: QuestionFeedback;
+    if (correct && userAnswer === correct) {
+      feedback = 'correct';
+    } else if (correct) {
+      // Check for partial match
+      const correctWords = correct.split(/\s+/);
+      const matchingWords = correctWords.filter((word) => 
+        word.length > 3 && userAnswer.includes(word)
+      );
+      feedback = matchingWords.length >= correctWords.length * 0.5 ? 'almost' : 'try_again';
+    } else {
+      feedback = 'almost'; // Be encouraging if no correct answer provided
+    }
+    
+    setQuestionFeedback(feedback);
+    setQuestionAnswered(true);
+  };
   
   // Text-to-speech hook
   const { speak, stop, isSpeaking, isPaused, toggleSpeaking, isSupported, voices, selectedVoice, setSelectedVoice } = useSpeech({ rate: 0.95 });
@@ -113,8 +167,19 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage, isGenerating
       )}
     >
       {!isUser && (
-        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-primary flex items-center justify-center shadow-soft">
-          <BookOpen className="w-4 h-4 text-primary-foreground" />
+        <div className="flex-shrink-0">
+          <TeacherAvatar 
+            config={defaultAvatarConfig}
+            expression={
+              questionFeedback === 'correct' ? 'celebrating' :
+              questionFeedback === 'almost' ? 'encouraging' :
+              questionFeedback === 'try_again' ? 'thinking' :
+              parsedContent.hasQuestion && !questionAnswered ? 'thinking' :
+              'neutral'
+            }
+            size={36}
+            animated={parsedContent.hasQuestion}
+          />
         </div>
       )}
       
@@ -184,8 +249,23 @@ export const ChatMessage = ({ message, isLatest, isGeneratingImage, isGenerating
                     },
                   }}
                 >
-                  {message.content}
+                  {parsedContent.cleanContent}
                 </ReactMarkdown>
+                
+                {/* Interactive Question */}
+                {parsedContent.hasQuestion && (
+                  <div className="mt-4">
+                    <InteractiveQuestion
+                      question={parsedContent.question}
+                      hint={parsedContent.hint}
+                      correctAnswer={parsedContent.correctAnswer}
+                      onAnswer={handleQuestionAnswer}
+                      feedback={questionFeedback}
+                      isWaiting={!questionAnswered}
+                      avatarConfig={defaultAvatarConfig}
+                    />
+                  </div>
+                )}
                 
                 {/* Image generation loading spinner */}
                 {showImageLoader && (
