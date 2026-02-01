@@ -10,7 +10,8 @@ import { WelcomeMessage } from "@/components/WelcomeMessage";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { ProgressTracker } from "@/components/ProgressTracker";
 import { QuickRevisionDialog } from "@/components/QuickRevisionDialog";
-import { BookOpen, Menu, TrendingUp, Zap, Settings } from "lucide-react";
+import { ParentShareManager } from "@/components/ParentShareManager";
+import { BookOpen, Menu, TrendingUp, Zap, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AvatarPreview } from "@/components/avatar";
 
@@ -21,6 +22,7 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
   const [revisionOpen, setRevisionOpen] = useState(false);
+  const [parentShareOpen, setParentShareOpen] = useState(false);
   
   // User preferences for voice settings
   const { 
@@ -190,6 +192,15 @@ Keep it stress-free and focused!`;
                 <span className="hidden sm:inline">Progress</span>
               </Button>
               <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setParentShareOpen(true)}
+                className="gap-2"
+                title="Share with Parent/Mentor"
+              >
+                <Users className="w-4 h-4" />
+              </Button>
+              <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate("/settings")}
@@ -256,6 +267,9 @@ Keep it stress-free and focused!`;
         onClose={() => setRevisionOpen(false)}
         onStartRevision={handleQuickRevision}
       />
+
+      {/* Parent/Mentor Share Manager */}
+      <ParentShareManager isOpen={parentShareOpen} onClose={() => setParentShareOpen(false)} />
     </div>
   );
 };
