@@ -9,6 +9,9 @@ interface ShareLink {
   expires_at: string | null;
   is_active: boolean;
   label: string | null;
+  parent_email: string | null;
+  digest_enabled: boolean;
+  last_digest_sent: string | null;
 }
 
 export const useParentShare = () => {
@@ -99,12 +102,30 @@ export const useParentShare = () => {
     return { error };
   };
 
+  const updateDigestSettings = async (id: string, parentEmail: string | null, digestEnabled: boolean) => {
+    const { error } = await supabase
+      .from('parent_share_links')
+      .update({ 
+        parent_email: parentEmail, 
+        digest_enabled: digestEnabled 
+      })
+      .eq('id', id);
+
+    if (!error) {
+      setShareLinks(prev => prev.map(link => 
+        link.id === id ? { ...link, parent_email: parentEmail, digest_enabled: digestEnabled } : link
+      ));
+    }
+    return { error };
+  };
+
   return {
     shareLinks,
     isLoading,
     createShareLink,
     deactivateLink,
     deleteLink,
+    updateDigestSettings,
     refreshLinks: fetchShareLinks
   };
 };

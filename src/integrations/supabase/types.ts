@@ -76,28 +76,37 @@ export type Database = {
       parent_share_links: {
         Row: {
           created_at: string
+          digest_enabled: boolean
           expires_at: string | null
           id: string
           is_active: boolean
           label: string | null
+          last_digest_sent: string | null
+          parent_email: string | null
           share_token: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          digest_enabled?: boolean
           expires_at?: string | null
           id?: string
           is_active?: boolean
           label?: string | null
+          last_digest_sent?: string | null
+          parent_email?: string | null
           share_token: string
           user_id: string
         }
         Update: {
           created_at?: string
+          digest_enabled?: boolean
           expires_at?: string | null
           id?: string
           is_active?: boolean
           label?: string | null
+          last_digest_sent?: string | null
+          parent_email?: string | null
           share_token?: string
           user_id?: string
         }
