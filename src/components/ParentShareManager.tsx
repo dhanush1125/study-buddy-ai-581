@@ -36,10 +36,14 @@ import {
   Ban,
   Mail,
   Send,
-  Loader2
+  Loader2,
+  CalendarClock,
+  Bell,
+  BellOff
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
 
 interface ParentShareManagerProps {
   isOpen: boolean;
@@ -47,7 +51,7 @@ interface ParentShareManagerProps {
 }
 
 export const ParentShareManager = ({ isOpen, onClose }: ParentShareManagerProps) => {
-  const { shareLinks, isLoading, createShareLink, deactivateLink, deleteLink } = useParentShare();
+  const { shareLinks, isLoading, createShareLink, deactivateLink, deleteLink, updateDigestSettings } = useParentShare();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
@@ -62,6 +66,13 @@ export const ParentShareManager = ({ isOpen, onClose }: ParentShareManagerProps)
   const [parentEmail, setParentEmail] = useState('');
   const [studentName, setStudentName] = useState('');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  // Digest settings dialog state
+  const [digestDialogOpen, setDigestDialogOpen] = useState(false);
+  const [digestDialogLink, setDigestDialogLink] = useState<{ id: string; label: string | null; parent_email: string | null; digest_enabled: boolean } | null>(null);
+  const [digestEmail, setDigestEmail] = useState('');
+  const [digestEnabled, setDigestEnabled] = useState(false);
+  const [isSavingDigest, setIsSavingDigest] = useState(false);
 
   if (!isOpen) return null;
 
@@ -145,6 +156,42 @@ export const ParentShareManager = ({ isOpen, onClose }: ParentShareManagerProps)
       });
     } finally {
       setIsSendingEmail(false);
+    }
+  };
+
+  const openDigestDialog = (link: { id: string; label: string | null; parent_email: string | null; digest_enabled: boolean }) => {
+    setDigestDialogLink(link);
+    setDigestEmail(link.parent_email || '');
+    setDigestEnabled(link.digest_enabled);
+    setDigestDialogOpen(true);
+  };
+
+  const handleSaveDigest = async () => {
+    if (!digestDialogLink) return;
+    
+    setIsSavingDigest(true);
+    try {
+      const { error } = await updateDigestSettings(
+        digestDialogLink.id,
+        digestEnabled ? digestEmail : null,
+        digestEnabled && !!digestEmail
+      );
+
+      if (error) throw error;
+
+      toast({ 
+        title: digestEnabled ? 'Weekly digest enabled! 📬' : 'Digest disabled',
+        description: digestEnabled ? `Weekly summaries will be sent to ${digestEmail}` : 'No more weekly emails will be sent'
+      });
+      setDigestDialogOpen(false);
+    } catch (error: any) {
+      toast({ 
+        title: 'Failed to save settings', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsSavingDigest(false);
     }
   };
 
@@ -284,6 +331,12 @@ export const ParentShareManager = ({ isOpen, onClose }: ParentShareManagerProps)
                               Expires {format(new Date(link.expires_at), 'MMM d, yyyy')}
                             </span>
                           )}
+                          {link.digest_enabled && link.parent_email && (
+                            <Badge variant="outline" className="gap-1 text-xs">
+                              <Bell className="h-2.5 w-2.5" />
+                              Weekly digest
+                            </Badge>
+                          )}
                         </div>
                       </div>
 
@@ -298,6 +351,20 @@ export const ParentShareManager = ({ isOpen, onClose }: ParentShareManagerProps)
                               title="Send via email"
                             >
                               <Mail className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-8 w-8 ${link.digest_enabled ? 'text-primary' : 'text-muted-foreground'}`}
+                              onClick={() => openDigestDialog({ 
+                                id: link.id, 
+                                label: link.label, 
+                                parent_email: link.parent_email, 
+                                digest_enabled: link.digest_enabled 
+                              })}
+                              title="Weekly digest settings"
+                            >
+                              {link.digest_enabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
                             </Button>
                             <Button
                               variant="ghost"
@@ -382,6 +449,77 @@ export const ParentShareManager = ({ isOpen, onClose }: ParentShareManagerProps)
                 <>
                   <Send className="h-4 w-4" />
                   Send Invitation
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Digest Settings Dialog */}
+      <Dialog open={digestDialogOpen} onOpenChange={setDigestDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5" />
+              Weekly Digest Settings
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="digest-switch">Enable Weekly Digest</Label>
+                <p className="text-sm text-muted-foreground">
+                  Send automatic weekly progress summaries
+                </p>
+              </div>
+              <Switch
+                id="digest-switch"
+                checked={digestEnabled}
+                onCheckedChange={setDigestEnabled}
+              />
+            </div>
+            
+            {digestEnabled && (
+              <div className="space-y-2">
+                <Label htmlFor="digestEmail">Recipient Email</Label>
+                <Input
+                  id="digestEmail"
+                  type="email"
+                  placeholder="parent@example.com"
+                  value={digestEmail}
+                  onChange={(e) => setDigestEmail(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Weekly summaries will be sent every Sunday with your progress highlights.
+                </p>
+              </div>
+            )}
+
+            {digestDialogLink?.label && (
+              <p className="text-sm text-muted-foreground">
+                Link: <span className="font-medium">{digestDialogLink.label}</span>
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDigestDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveDigest} 
+              disabled={isSavingDigest || (digestEnabled && !digestEmail)}
+              className="gap-2"
+            >
+              {isSavingDigest ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4" />
+                  Save Settings
                 </>
               )}
             </Button>
