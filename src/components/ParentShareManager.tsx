@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useParentShare } from '@/hooks/useParentShare';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,7 +33,10 @@ import {
   Users,
   ExternalLink,
   Clock,
-  Ban
+  Ban,
+  Mail,
+  Send,
+  Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -43,12 +48,20 @@ interface ParentShareManagerProps {
 
 export const ParentShareManager = ({ isOpen, onClose }: ParentShareManagerProps) => {
   const { shareLinks, isLoading, createShareLink, deactivateLink, deleteLink } = useParentShare();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [expiresIn, setExpiresIn] = useState<string>('never');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  
+  // Email dialog state
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailDialogLink, setEmailDialogLink] = useState<{ token: string; label: string | null } | null>(null);
+  const [parentEmail, setParentEmail] = useState('');
+  const [studentName, setStudentName] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   if (!isOpen) return null;
 
@@ -90,6 +103,48 @@ export const ParentShareManager = ({ isOpen, onClose }: ParentShareManagerProps)
     const { error } = await deleteLink(id);
     if (!error) {
       toast({ title: 'Link deleted' });
+    }
+  };
+
+  const openEmailDialog = (token: string, label: string | null) => {
+    setEmailDialogLink({ token, label });
+    setParentEmail('');
+    setStudentName(user?.user_metadata?.full_name || user?.email?.split('@')[0] || '');
+    setEmailDialogOpen(true);
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailDialogLink || !parentEmail || !studentName) return;
+    
+    setIsSendingEmail(true);
+    try {
+      const shareUrl = getShareUrl(emailDialogLink.token);
+      
+      const { data, error } = await supabase.functions.invoke('send-parent-invite', {
+        body: {
+          parentEmail,
+          studentName,
+          shareUrl,
+          label: emailDialogLink.label
+        }
+      });
+
+      if (error) throw error;
+
+      toast({ 
+        title: 'Email sent! 📧', 
+        description: `Invitation sent to ${parentEmail}` 
+      });
+      setEmailDialogOpen(false);
+    } catch (error: any) {
+      console.error('Error sending email:', error);
+      toast({ 
+        title: 'Failed to send email', 
+        description: error.message || 'Please try again',
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -234,15 +289,26 @@ export const ParentShareManager = ({ isOpen, onClose }: ParentShareManagerProps)
 
                       <div className="flex items-center gap-1">
                         {link.is_active && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDeactivate(link.id)}
-                            title="Deactivate link"
-                          >
-                            <Ban className="h-4 w-4" />
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-primary hover:text-primary"
+                              onClick={() => openEmailDialog(link.share_token, link.label)}
+                              title="Send via email"
+                            >
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDeactivate(link.id)}
+                              title="Deactivate link"
+                            >
+                              <Ban className="h-4 w-4" />
+                            </Button>
+                          </>
                         )}
                         <Button
                           variant="ghost"
@@ -262,6 +328,66 @@ export const ParentShareManager = ({ isOpen, onClose }: ParentShareManagerProps)
           </ScrollArea>
         </CardContent>
       </Card>
+
+      {/* Email Dialog */}
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Email Share Link
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="studentName">Your Name</Label>
+              <Input
+                id="studentName"
+                placeholder="How should we introduce you?"
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="parentEmail">Parent/Mentor Email</Label>
+              <Input
+                id="parentEmail"
+                type="email"
+                placeholder="parent@example.com"
+                value={parentEmail}
+                onChange={(e) => setParentEmail(e.target.value)}
+              />
+            </div>
+            {emailDialogLink?.label && (
+              <p className="text-sm text-muted-foreground">
+                Sharing: <span className="font-medium">{emailDialogLink.label}</span>
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSendEmail} 
+              disabled={isSendingEmail || !parentEmail || !studentName}
+              className="gap-2"
+            >
+              {isSendingEmail ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Send Invitation
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
