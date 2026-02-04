@@ -181,30 +181,39 @@ export type Database = {
           created_at: string
           id: string
           speech_language: string
+          study_days_goal: number | null
           tts_rate: number
           tts_voice_name: string | null
           updated_at: string
           user_id: string
+          weekly_quiz_goal: number | null
+          weekly_topic_goal: number | null
         }
         Insert: {
           avatar_config?: Json | null
           created_at?: string
           id?: string
           speech_language?: string
+          study_days_goal?: number | null
           tts_rate?: number
           tts_voice_name?: string | null
           updated_at?: string
           user_id: string
+          weekly_quiz_goal?: number | null
+          weekly_topic_goal?: number | null
         }
         Update: {
           avatar_config?: Json | null
           created_at?: string
           id?: string
           speech_language?: string
+          study_days_goal?: number | null
           tts_rate?: number
           tts_voice_name?: string | null
           updated_at?: string
           user_id?: string
+          weekly_quiz_goal?: number | null
+          weekly_topic_goal?: number | null
         }
         Relationships: []
       }

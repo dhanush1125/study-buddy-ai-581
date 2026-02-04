@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -46,12 +47,19 @@ interface WeakArea {
   attempts: number;
 }
 
+interface StudyGoals {
+  weeklyTopicGoal: number;
+  weeklyQuizGoal: number;
+  studyDaysGoal: number;
+}
+
 const ParentView = () => {
   const { token } = useParams<{ token: string }>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [studentData, setStudentData] = useState<StudentData | null>(null);
   const [linkLabel, setLinkLabel] = useState<string | null>(null);
+  const [studyGoals, setStudyGoals] = useState<StudyGoals>({ weeklyTopicGoal: 5, weeklyQuizGoal: 3, studyDaysGoal: 5 });
 
   useEffect(() => {
     if (token) {
@@ -91,8 +99,8 @@ const ParentView = () => {
 
       setLinkLabel(linkData.label);
 
-      // Fetch student's progress data
-      const [topicsRes, quizzesRes] = await Promise.all([
+      // Fetch student's progress data and preferences (for study goals)
+      const [topicsRes, quizzesRes, prefsRes] = await Promise.all([
         supabase
           .from('student_topics')
           .select('id, topic_name, subject, difficulty, completed_at')
@@ -102,8 +110,21 @@ const ParentView = () => {
           .from('quiz_attempts')
           .select('id, topic_name, subject, score, total_questions, percentage, attempted_at')
           .eq('user_id', linkData.user_id)
-          .order('attempted_at', { ascending: false })
+          .order('attempted_at', { ascending: false }),
+        supabase
+          .from('user_preferences')
+          .select('weekly_topic_goal, weekly_quiz_goal, study_days_goal')
+          .eq('user_id', linkData.user_id)
+          .maybeSingle()
       ]);
+
+      if (prefsRes.data) {
+        setStudyGoals({
+          weeklyTopicGoal: prefsRes.data.weekly_topic_goal ?? 5,
+          weeklyQuizGoal: prefsRes.data.weekly_quiz_goal ?? 3,
+          studyDaysGoal: prefsRes.data.study_days_goal ?? 5,
+        });
+      }
 
       setStudentData({
         topics: (topicsRes.data || []) as StudentData['topics'],
@@ -176,6 +197,36 @@ const ParentView = () => {
     return { activeDays, totalDays: 14, streak, activityDates, last14Days };
   };
 
+  // Calculate this week's activity for goal tracking
+  const getThisWeekProgress = () => {
+    if (!studentData) return { topicsCompleted: 0, quizzesCompleted: 0, studyDays: 0 };
+    
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - 7);
+    
+    const topicsThisWeek = studentData.topics.filter(t => new Date(t.completed_at) >= weekStart).length;
+    const quizzesThisWeek = studentData.quizzes.filter(q => new Date(q.attempted_at) >= weekStart).length;
+    
+    const studyDates = new Set<string>();
+    studentData.topics.forEach(t => {
+      if (new Date(t.completed_at) >= weekStart) {
+        studyDates.add(new Date(t.completed_at).toDateString());
+      }
+    });
+    studentData.quizzes.forEach(q => {
+      if (new Date(q.attempted_at) >= weekStart) {
+        studyDates.add(new Date(q.attempted_at).toDateString());
+      }
+    });
+    
+    return {
+      topicsCompleted: topicsThisWeek,
+      quizzesCompleted: quizzesThisWeek,
+      studyDays: studyDates.size,
+    };
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -206,6 +257,7 @@ const ParentView = () => {
 
   const weakAreas = getWeakAreas();
   const consistency = getStudyConsistency();
+  const thisWeekProgress = getThisWeekProgress();
   const totalTopics = studentData?.topics.length || 0;
   const totalQuizzes = studentData?.quizzes.length || 0;
   const avgScore = totalQuizzes > 0
@@ -284,6 +336,20 @@ const ParentView = () => {
         </section>
 
         <div className="grid md:grid-cols-2 gap-8">
+          {/* Weekly Goals Progress */}
+          <section>
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              Weekly Goals
+            </h2>
+            <GoalProgressCard
+              progress={{
+                ...studyGoals,
+                ...thisWeekProgress,
+              }}
+            />
+          </section>
+
           {/* Weak Areas */}
           <section>
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -322,6 +388,9 @@ const ParentView = () => {
               </CardContent>
             </Card>
           </section>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8">
 
           {/* Study Consistency */}
           <section>

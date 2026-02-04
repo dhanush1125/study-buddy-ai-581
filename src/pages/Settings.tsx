@@ -18,6 +18,7 @@ import {
 import { ArrowLeft, Volume2, Mic, Settings2, Check, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
 import { AvatarBuilder, AvatarPreview, defaultAvatarConfig } from "@/components/avatar";
+import { StudyGoalSettings } from "@/components/StudyGoalSettings";
 import type { AvatarConfig } from "@/components/avatar";
 
 const SettingsPage = () => {
@@ -33,7 +34,7 @@ const SettingsPage = () => {
   } = useUserPreferences();
   
   const [isAvatarSaving, setIsAvatarSaving] = useState(false);
-  
+  const [isGoalsSaving, setIsGoalsSaving] = useState(false);
   const { voices, speak, stop, isSpeaking } = useSpeech({ rate: preferences.ttsRate });
   
   // Local state for form
@@ -80,6 +81,13 @@ const SettingsPage = () => {
     await saveAvatarConfig(config);
     setIsAvatarSaving(false);
     toast.success("Avatar saved successfully!");
+  };
+
+  const handleGoalsSave = async (goals: { weeklyTopicGoal: number; weeklyQuizGoal: number; studyDaysGoal: number }) => {
+    setIsGoalsSaving(true);
+    await savePreferences(goals);
+    setIsGoalsSaving(false);
+    toast.success("Study goals saved!");
   };
 
   const handleTestVoice = () => {
@@ -178,6 +186,16 @@ const SettingsPage = () => {
           </CardContent>
         </Card>
 
+        {/* Study Goals */}
+        <StudyGoalSettings
+          goals={{
+            weeklyTopicGoal: preferences.weeklyTopicGoal,
+            weeklyQuizGoal: preferences.weeklyQuizGoal,
+            studyDaysGoal: preferences.studyDaysGoal,
+          }}
+          onSave={handleGoalsSave}
+          isSaving={isGoalsSaving}
+        />
         {/* Speech Recognition Settings */}
         <Card>
           <CardHeader>
