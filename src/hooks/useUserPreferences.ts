@@ -9,6 +9,9 @@ interface UserPreferences {
   ttsVoiceName: string | null;
   ttsRate: number;
   avatarConfig: AvatarConfig | null;
+  weeklyTopicGoal: number;
+  weeklyQuizGoal: number;
+  studyDaysGoal: number;
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -16,6 +19,9 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   ttsVoiceName: null,
   ttsRate: 0.95,
   avatarConfig: null,
+  weeklyTopicGoal: 5,
+  weeklyQuizGoal: 3,
+  studyDaysGoal: 5,
 };
 
 export const useUserPreferences = () => {
@@ -36,7 +42,7 @@ export const useUserPreferences = () => {
       try {
         const { data, error } = await supabase
           .from('user_preferences')
-          .select('speech_language, tts_voice_name, tts_rate, avatar_config')
+          .select('speech_language, tts_voice_name, tts_rate, avatar_config, weekly_topic_goal, weekly_quiz_goal, study_days_goal')
           .eq('user_id', user.id)
           .single();
 
@@ -51,6 +57,9 @@ export const useUserPreferences = () => {
             ttsVoiceName: data.tts_voice_name,
             ttsRate: Number(data.tts_rate),
             avatarConfig: data.avatar_config as unknown as AvatarConfig | null,
+            weeklyTopicGoal: data.weekly_topic_goal ?? 5,
+            weeklyQuizGoal: data.weekly_quiz_goal ?? 3,
+            studyDaysGoal: data.study_days_goal ?? 5,
           });
         }
       } catch (err) {
@@ -79,6 +88,9 @@ export const useUserPreferences = () => {
         tts_voice_name: updatedPrefs.ttsVoiceName,
         tts_rate: updatedPrefs.ttsRate,
         avatar_config: updatedPrefs.avatarConfig,
+        weekly_topic_goal: updatedPrefs.weeklyTopicGoal,
+        weekly_quiz_goal: updatedPrefs.weeklyQuizGoal,
+        study_days_goal: updatedPrefs.studyDaysGoal,
       };
       
       const { error } = await supabase

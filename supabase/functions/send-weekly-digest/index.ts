@@ -29,6 +29,11 @@ interface ProgressData {
   avgScore: number;
   studyDays: number;
   weakAreas: Array<{ subject: string; avgScore: number }>;
+  goals: {
+    weeklyTopicGoal: number;
+    weeklyQuizGoal: number;
+    studyDaysGoal: number;
+  };
 }
 
 const getWeeklyProgress = async (
@@ -50,6 +55,19 @@ const getWeeklyProgress = async (
     .select("*")
     .eq("user_id", userId)
     .gte("completed_at", weekAgoStr);
+
+  // Get user preferences for goals
+  const { data: prefs } = await supabase
+    .from("user_preferences")
+    .select("weekly_topic_goal, weekly_quiz_goal, study_days_goal")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const goals = {
+    weeklyTopicGoal: prefs?.weekly_topic_goal ?? 5,
+    weeklyQuizGoal: prefs?.weekly_quiz_goal ?? 3,
+    studyDaysGoal: prefs?.study_days_goal ?? 5,
+  };
 
   // Get quizzes
   const { data: allQuizzes } = await supabase
@@ -120,6 +138,7 @@ const getWeeklyProgress = async (
     avgScore: Math.round(avgScore),
     studyDays: studyDates.size,
     weakAreas,
+    goals,
   };
 };
 
@@ -132,6 +151,13 @@ const generateDigestHtml = (
   const labelText = label ? ` (${label})` : "";
   const weekActivity =
     progress.topicsThisWeek > 0 || progress.quizzesThisWeek > 0;
+
+  // Goal progress calculation
+  const topicGoalMet = progress.topicsThisWeek >= progress.goals.weeklyTopicGoal;
+  const quizGoalMet = progress.quizzesThisWeek >= progress.goals.weeklyQuizGoal;
+  const daysGoalMet = progress.studyDays >= progress.goals.studyDaysGoal;
+  const allGoalsMet = topicGoalMet && quizGoalMet && daysGoalMet;
+  const someGoalsMet = topicGoalMet || quizGoalMet || daysGoalMet;
 
   const weakAreasHtml =
     progress.weakAreas.length > 0
@@ -148,6 +174,34 @@ const generateDigestHtml = (
         <p style="margin: 0; color: #065f46;">✅ All subjects are looking good!</p>
       </div>
     `;
+
+  const goalsHtml = `
+    <div style="background: ${allGoalsMet ? '#d1fae5' : someGoalsMet ? '#fef3c7' : '#fee2e2'}; border-radius: 8px; padding: 15px; margin: 15px 0;">
+      <h4 style="margin: 0 0 10px 0; color: ${allGoalsMet ? '#065f46' : someGoalsMet ? '#92400e' : '#991b1b'};">
+        ${allGoalsMet ? '🎯 All Weekly Goals Met!' : someGoalsMet ? '📊 Goal Progress' : '⚠️ Goals Need Attention'}
+      </h4>
+      <table style="width: 100%; font-size: 14px;">
+        <tr>
+          <td>Topics:</td>
+          <td style="text-align: right; font-weight: bold;">
+            ${progress.topicsThisWeek}/${progress.goals.weeklyTopicGoal} ${topicGoalMet ? '✓' : ''}
+          </td>
+        </tr>
+        <tr>
+          <td>Quizzes:</td>
+          <td style="text-align: right; font-weight: bold;">
+            ${progress.quizzesThisWeek}/${progress.goals.weeklyQuizGoal} ${quizGoalMet ? '✓' : ''}
+          </td>
+        </tr>
+        <tr>
+          <td>Study Days:</td>
+          <td style="text-align: right; font-weight: bold;">
+            ${progress.studyDays}/${progress.goals.studyDaysGoal} ${daysGoalMet ? '✓' : ''}
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
 
   return `
     <!DOCTYPE html>
@@ -207,6 +261,8 @@ const generateDigestHtml = (
             </div>
           `
           }
+          
+          ${goalsHtml}
           
           <h3>📊 Overall Progress</h3>
           <p>Total topics: <strong>${progress.totalTopics}</strong> | Total quizzes: <strong>${progress.totalQuizzes}</strong> | Lifetime avg: <strong>${progress.avgScore}%</strong></p>
