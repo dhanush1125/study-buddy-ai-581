@@ -9,6 +9,8 @@ import { GoalHistoryChart } from '@/components/GoalHistoryChart';
 import { useGoalHistory } from '@/hooks/useGoalHistory';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { generateProgressReport } from '@/utils/generateProgressReport';
+import { toast } from '@/hooks/use-toast';
 import { 
   BookOpen, 
   Target, 
@@ -20,7 +22,9 @@ import {
   CheckCircle2,
   Clock,
   ArrowLeft,
-  User
+  User,
+  FileText,
+  Loader2
 } from 'lucide-react';
 import { format, subDays, eachDayOfInterval, isSameDay } from 'date-fns';
 
@@ -63,6 +67,7 @@ const ParentView = () => {
   const [linkLabel, setLinkLabel] = useState<string | null>(null);
   const [studyGoals, setStudyGoals] = useState<StudyGoals>({ weeklyTopicGoal: 5, weeklyQuizGoal: 3, studyDaysGoal: 5 });
   const [studentUserId, setStudentUserId] = useState<string | null>(null);
+  const [isExportingReport, setIsExportingReport] = useState(false);
 
   const { history: goalHistory, isLoading: historyLoading } = useGoalHistory(studentUserId || undefined);
 
@@ -264,6 +269,7 @@ const ParentView = () => {
   const weakAreas = getWeakAreas();
   const consistency = getStudyConsistency();
   const thisWeekProgress = getThisWeekProgress();
+
   const totalTopics = studentData?.topics.length || 0;
   const totalQuizzes = studentData?.quizzes.length || 0;
   const avgScore = totalQuizzes > 0
@@ -275,6 +281,48 @@ const ParentView = () => {
   studentData?.topics.forEach(topic => {
     topicsBySubject[topic.subject] = (topicsBySubject[topic.subject] || 0) + 1;
   });
+
+  const handleExportFullReport = () => {
+    if (!studentData) return;
+    
+    setIsExportingReport(true);
+    try {
+      generateProgressReport({
+        studentName: linkLabel || 'Student',
+        totalTopics,
+        totalQuizzes,
+        avgScore,
+        subjectCount: Object.keys(topicsBySubject).length,
+        goalProgress: {
+          ...studyGoals,
+          ...thisWeekProgress,
+        },
+        weakAreas,
+        consistency: {
+          activeDays: consistency.activeDays,
+          totalDays: consistency.totalDays,
+          streak: consistency.streak,
+        },
+        recentTopics: studentData.topics.slice(0, 5),
+        recentQuizzes: studentData.quizzes.slice(0, 5),
+        goalHistory,
+      });
+      
+      toast({
+        title: 'Report Downloaded',
+        description: 'Full progress report has been saved as PDF.',
+      });
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Could not generate the report. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExportingReport(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
@@ -290,10 +338,26 @@ const ParentView = () => {
               {linkLabel && <p className="text-sm text-muted-foreground">{linkLabel}</p>}
             </div>
           </div>
-          <Badge variant="secondary" className="gap-1">
-            <Clock className="h-3 w-3" />
-            Updated just now
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleExportFullReport}
+              disabled={isExportingReport || !studentData}
+              className="gap-2"
+            >
+              {isExportingReport ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
+              Download Full Report
+            </Button>
+            <Badge variant="secondary" className="gap-1">
+              <Clock className="h-3 w-3" />
+              Updated just now
+            </Badge>
+          </div>
         </div>
       </header>
 
