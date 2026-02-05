@@ -398,7 +398,11 @@ const ParentView = () => {
 
       {/* Goal History Chart */}
       <section>
-        <GoalHistoryChart data={goalHistory} isLoading={historyLoading} />
+        <GoalHistoryChart 
+          data={goalHistory} 
+          isLoading={historyLoading} 
+          studentName={linkLabel || 'Student'} 
+        />
       </section>
 
         <div className="grid md:grid-cols-2 gap-8">
