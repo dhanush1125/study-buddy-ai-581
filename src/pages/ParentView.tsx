@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { GoalProgressCard } from '@/components/GoalProgressCard';
+import { GoalHistoryChart } from '@/components/GoalHistoryChart';
+import { useGoalHistory } from '@/hooks/useGoalHistory';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -60,6 +62,9 @@ const ParentView = () => {
   const [studentData, setStudentData] = useState<StudentData | null>(null);
   const [linkLabel, setLinkLabel] = useState<string | null>(null);
   const [studyGoals, setStudyGoals] = useState<StudyGoals>({ weeklyTopicGoal: 5, weeklyQuizGoal: 3, studyDaysGoal: 5 });
+  const [studentUserId, setStudentUserId] = useState<string | null>(null);
+
+  const { history: goalHistory, isLoading: historyLoading } = useGoalHistory(studentUserId || undefined);
 
   useEffect(() => {
     if (token) {
@@ -98,6 +103,7 @@ const ParentView = () => {
       }
 
       setLinkLabel(linkData.label);
+      setStudentUserId(linkData.user_id);
 
       // Fetch student's progress data and preferences (for study goals)
       const [topicsRes, quizzesRes, prefsRes] = await Promise.all([
@@ -389,6 +395,11 @@ const ParentView = () => {
             </Card>
           </section>
         </div>
+
+      {/* Goal History Chart */}
+      <section>
+        <GoalHistoryChart data={goalHistory} isLoading={historyLoading} />
+      </section>
 
         <div className="grid md:grid-cols-2 gap-8">
 

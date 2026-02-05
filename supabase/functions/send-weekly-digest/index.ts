@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { format, startOfWeek } from "https://esm.sh/date-fns@3.6.0";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -43,6 +44,7 @@ const getWeeklyProgress = async (
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   const weekAgoStr = oneWeekAgo.toISOString();
+  const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
 
   // Get topics
   const { data: allTopics } = await supabase
@@ -128,6 +130,22 @@ const getWeeklyProgress = async (
     .filter((area) => area.avgScore < 70)
     .sort((a, b) => a.avgScore - b.avgScore)
     .slice(0, 3);
+
+  // Save weekly history snapshot
+  try {
+    await supabase.from("weekly_goal_history").upsert({
+      user_id: userId,
+      week_start: weekStart,
+      topics_completed: thisWeekTopics.length,
+      quizzes_completed: thisWeekQuizzes.length,
+      study_days: studyDates.size,
+      topic_goal: goals.weeklyTopicGoal,
+      quiz_goal: goals.weeklyQuizGoal,
+      study_days_goal: goals.studyDaysGoal,
+    }, { onConflict: 'user_id,week_start' });
+  } catch (err) {
+    console.error("Failed to save weekly history:", err);
+  }
 
   return {
     topicsThisWeek: thisWeekTopics.length,

@@ -217,6 +217,45 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_goal_history: {
+        Row: {
+          created_at: string
+          id: string
+          quiz_goal: number
+          quizzes_completed: number
+          study_days: number
+          study_days_goal: number
+          topic_goal: number
+          topics_completed: number
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          quiz_goal?: number
+          quizzes_completed?: number
+          study_days?: number
+          study_days_goal?: number
+          topic_goal?: number
+          topics_completed?: number
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          quiz_goal?: number
+          quizzes_completed?: number
+          study_days?: number
+          study_days_goal?: number
+          topic_goal?: number
+          topics_completed?: number
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
