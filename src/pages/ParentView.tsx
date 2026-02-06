@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { GoalHistoryChart } from '@/components/GoalHistoryChart';
+import { ScheduleReportForm } from '@/components/ScheduleReportForm';
 import { useGoalHistory } from '@/hooks/useGoalHistory';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -24,7 +25,8 @@ import {
   ArrowLeft,
   User,
   FileText,
-  Loader2
+  Loader2,
+  Mail
 } from 'lucide-react';
 import { format, subDays, eachDayOfInterval, isSameDay } from 'date-fns';
 
@@ -59,6 +61,12 @@ interface StudyGoals {
   studyDaysGoal: number;
 }
 
+interface ScheduleInfo {
+  email: string | null;
+  date: string | null;
+  sentAt: string | null;
+}
+
 const ParentView = () => {
   const { token } = useParams<{ token: string }>();
   const [isLoading, setIsLoading] = useState(true);
@@ -68,6 +76,7 @@ const ParentView = () => {
   const [studyGoals, setStudyGoals] = useState<StudyGoals>({ weeklyTopicGoal: 5, weeklyQuizGoal: 3, studyDaysGoal: 5 });
   const [studentUserId, setStudentUserId] = useState<string | null>(null);
   const [isExportingReport, setIsExportingReport] = useState(false);
+  const [scheduleInfo, setScheduleInfo] = useState<ScheduleInfo>({ email: null, date: null, sentAt: null });
 
   const { history: goalHistory, isLoading: historyLoading } = useGoalHistory(studentUserId || undefined);
 
@@ -85,7 +94,7 @@ const ParentView = () => {
       // First verify the share link is valid
       const { data: linkData, error: linkError } = await supabase
         .from('parent_share_links')
-        .select('user_id, label, is_active, expires_at')
+        .select('user_id, label, is_active, expires_at, report_email, report_scheduled_date, report_sent_at')
         .eq('share_token', token)
         .maybeSingle();
 
@@ -109,6 +118,11 @@ const ParentView = () => {
 
       setLinkLabel(linkData.label);
       setStudentUserId(linkData.user_id);
+      setScheduleInfo({
+        email: linkData.report_email,
+        date: linkData.report_scheduled_date,
+        sentAt: linkData.report_sent_at,
+      });
 
       // Fetch student's progress data and preferences (for study goals)
       const [topicsRes, quizzesRes, prefsRes] = await Promise.all([
@@ -468,6 +482,21 @@ const ParentView = () => {
           studentName={linkLabel || 'Student'} 
         />
       </section>
+
+        {/* Schedule Report for Meeting */}
+        <section>
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Mail className="h-5 w-5 text-primary" />
+            Email Report Scheduling
+          </h2>
+          <ScheduleReportForm
+            shareToken={token || ''}
+            existingEmail={scheduleInfo.email}
+            existingDate={scheduleInfo.date}
+            existingSentAt={scheduleInfo.sentAt}
+            onScheduled={() => fetchStudentProgress()}
+          />
+        </section>
 
         <div className="grid md:grid-cols-2 gap-8">
 
