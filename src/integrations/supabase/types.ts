@@ -83,6 +83,9 @@ export type Database = {
           label: string | null
           last_digest_sent: string | null
           parent_email: string | null
+          report_email: string | null
+          report_scheduled_date: string | null
+          report_sent_at: string | null
           share_token: string
           user_id: string
         }
@@ -95,6 +98,9 @@ export type Database = {
           label?: string | null
           last_digest_sent?: string | null
           parent_email?: string | null
+          report_email?: string | null
+          report_scheduled_date?: string | null
+          report_sent_at?: string | null
           share_token: string
           user_id: string
         }
@@ -107,6 +113,9 @@ export type Database = {
           label?: string | null
           last_digest_sent?: string | null
           parent_email?: string | null
+          report_email?: string | null
+          report_scheduled_date?: string | null
+          report_sent_at?: string | null
           share_token?: string
           user_id?: string
         }
