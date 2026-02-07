@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { GoalHistoryChart } from '@/components/GoalHistoryChart';
 import { ScheduleReportForm } from '@/components/ScheduleReportForm';
+import { ProgressComparison } from '@/components/ProgressComparison';
 import { useGoalHistory } from '@/hooks/useGoalHistory';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -417,6 +418,18 @@ const ParentView = () => {
               </CardContent>
             </Card>
           </div>
+        </section>
+
+        {/* Progress Comparison */}
+        <section>
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Period Comparison
+          </h2>
+          <ProgressComparison 
+            topics={studentData?.topics || []}
+            quizzes={studentData?.quizzes || []}
+          />
         </section>
 
         <div className="grid md:grid-cols-2 gap-8">
