@@ -279,7 +279,12 @@ serve(async (req) => {
 
         console.log(`Email sent to ${report.report_email}:`, emailResult);
 
-        // Mark as sent
+        // Check if email was actually sent successfully
+        if (emailResult.error) {
+          throw new Error(`Resend API error: ${emailResult.error.message}`);
+        }
+
+        // Mark as sent only if email succeeded
         await supabase
           .from('parent_share_links')
           .update({ report_sent_at: new Date().toISOString() })
