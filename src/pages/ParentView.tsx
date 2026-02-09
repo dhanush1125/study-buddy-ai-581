@@ -8,6 +8,7 @@ import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { GoalHistoryChart } from '@/components/GoalHistoryChart';
 import { ScheduleReportForm } from '@/components/ScheduleReportForm';
 import { ProgressComparison } from '@/components/ProgressComparison';
+import { AchievementBadges } from '@/components/AchievementBadges';
 import { useGoalHistory } from '@/hooks/useGoalHistory';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -486,6 +487,15 @@ const ParentView = () => {
             </Card>
           </section>
         </div>
+
+      {/* Achievement Badges */}
+      <section>
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Award className="h-5 w-5 text-yellow-500" />
+          Achievement Badges
+        </h2>
+        <AchievementBadges userId={studentUserId || undefined} />
+      </section>
 
       {/* Goal History Chart */}
       <section>

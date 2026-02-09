@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AchievementBadges } from '@/components/AchievementBadges';
 import { 
   BookOpen, 
   Target, 
@@ -14,7 +15,8 @@ import {
   CheckCircle2,
   X,
   Brain,
-  Award
+  Award,
+  Trophy
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -69,6 +71,13 @@ export const ProgressTracker = ({ isOpen, onClose }: ProgressTrackerProps) => {
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
                 >
                   Overview
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="achievements" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                >
+                  <Trophy className="h-4 w-4 mr-1" />
+                  Achievements
                 </TabsTrigger>
                 <TabsTrigger 
                   value="topics" 
@@ -151,6 +160,10 @@ export const ProgressTracker = ({ isOpen, onClose }: ProgressTrackerProps) => {
                       </p>
                     </div>
                   )}
+                </TabsContent>
+
+                <TabsContent value="achievements" className="p-6 m-0">
+                  <AchievementBadges />
                 </TabsContent>
 
                 <TabsContent value="topics" className="p-6 m-0">
