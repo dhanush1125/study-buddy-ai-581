@@ -4,6 +4,8 @@ import { Progress } from '@/components/ui/progress';
 import { Award, Trophy, Flame, Lock } from 'lucide-react';
 import { useGoalHistory } from '@/hooks/useGoalHistory';
 import { useAchievements, Achievement } from '@/hooks/useAchievements';
+import { useBadgeNotifications } from '@/hooks/useBadgeNotifications';
+import { BadgeCelebration } from '@/components/BadgeCelebration';
 import { cn } from '@/lib/utils';
 
 interface AchievementBadgesProps {
@@ -93,6 +95,11 @@ const AchievementBadge = ({ achievement, compact }: { achievement: Achievement; 
 export const AchievementBadges = ({ userId, compact = false }: AchievementBadgesProps) => {
   const { history, isLoading } = useGoalHistory(userId);
   const { achievements, earnedCount, totalCount, currentStreak } = useAchievements(history);
+  const { 
+    showCelebration, 
+    currentCelebrationBadge, 
+    dismissCelebration 
+  } = useBadgeNotifications(achievements);
 
   if (isLoading) {
     return (
@@ -161,7 +168,13 @@ export const AchievementBadges = ({ userId, compact = false }: AchievementBadges
   }
 
   return (
-    <Card>
+    <>
+      <BadgeCelebration 
+        badge={currentCelebrationBadge} 
+        isOpen={showCelebration} 
+        onDismiss={dismissCelebration} 
+      />
+      <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
@@ -223,5 +236,6 @@ export const AchievementBadges = ({ userId, compact = false }: AchievementBadges
         )}
       </CardContent>
     </Card>
+    </>
   );
 };
