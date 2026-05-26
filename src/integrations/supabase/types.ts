@@ -14,6 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          thread_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          thread_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "agent_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_ratings: {
+        Row: {
+          agent_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_ratings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_threads: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_threads_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agents: {
+        Row: {
+          avatar_emoji: string
+          category: string
+          clone_count: number
+          created_at: string
+          description: string
+          goals: string
+          id: string
+          is_public: boolean
+          memory_enabled: boolean
+          model: string
+          name: string
+          personality: string
+          role: string
+          system_prompt: string
+          tools: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_emoji?: string
+          category?: string
+          clone_count?: number
+          created_at?: string
+          description?: string
+          goals?: string
+          id?: string
+          is_public?: boolean
+          memory_enabled?: boolean
+          model?: string
+          name: string
+          personality?: string
+          role?: string
+          system_prompt?: string
+          tools?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_emoji?: string
+          category?: string
+          clone_count?: number
+          created_at?: string
+          description?: string
+          goals?: string
+          id?: string
+          is_public?: boolean
+          memory_enabled?: boolean
+          model?: string
+          name?: string
+          personality?: string
+          role?: string
+          system_prompt?: string
+          tools?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
