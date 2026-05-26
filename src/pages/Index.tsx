@@ -176,6 +176,15 @@ Keep it stress-free and focused!`;
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => navigate("/agents")}
+                className="gap-2 bg-primary/10 border-primary/30 hover:bg-primary/20 text-primary"
+              >
+                <Zap className="w-4 h-4" />
+                <span className="hidden sm:inline">Agent Studio</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setRevisionOpen(true)}
                 className="gap-2 bg-yellow-500/10 border-yellow-500/30 hover:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
               >
