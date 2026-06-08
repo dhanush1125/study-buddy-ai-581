@@ -1,0 +1,1 @@
+CREATE POLICY "Users can delete their own messages" ON public.messages FOR DELETE USING (EXISTS (SELECT 1 FROM public.conversations WHERE conversations.id = messages.conversation_id AND conversations.user_id = auth.uid()));
