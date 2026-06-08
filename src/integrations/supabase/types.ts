@@ -432,7 +432,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_parent_view_data: { Args: { _token: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
