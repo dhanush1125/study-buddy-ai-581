@@ -116,76 +116,49 @@ const ParentView = () => {
     setError(null);
 
     try {
-      // First verify the share link is valid
-      const { data: linkData, error: linkError } = await supabase
-        .from('parent_share_links')
-        .select('user_id, label, is_active, expires_at, report_email, report_scheduled_date, report_sent_at')
-        .eq('share_token', token)
-        .maybeSingle();
-
-      if (linkError || !linkData) {
-        setError('This share link is invalid or has expired.');
-        setIsLoading(false);
-        return;
-      }
-
-      if (!linkData.is_active) {
-        setError('This share link has been deactivated by the student.');
-        setIsLoading(false);
-        return;
-      }
-
-      if (linkData.expires_at && new Date(linkData.expires_at) < new Date()) {
-        setError('This share link has expired.');
-        setIsLoading(false);
-        return;
-      }
-
-      setLinkLabel(linkData.label);
-      setStudentUserId(linkData.user_id);
-      setScheduleInfo({
-        email: linkData.report_email,
-        date: linkData.report_scheduled_date,
-        sentAt: linkData.report_sent_at,
+      const { data, error: rpcError } = await supabase.rpc('get_parent_view_data', {
+        _token: token as string,
       });
 
-      // Fetch student's progress data and preferences (for study goals)
-      const [topicsRes, quizzesRes, prefsRes] = await Promise.all([
-        supabase
-          .from('student_topics')
-          .select('id, topic_name, subject, difficulty, completed_at')
-          .eq('user_id', linkData.user_id)
-          .order('completed_at', { ascending: false }),
-        supabase
-          .from('quiz_attempts')
-          .select('id, topic_name, subject, score, total_questions, percentage, attempted_at')
-          .eq('user_id', linkData.user_id)
-          .order('attempted_at', { ascending: false }),
-        supabase
-          .from('user_preferences')
-          .select('weekly_topic_goal, weekly_quiz_goal, study_days_goal')
-          .eq('user_id', linkData.user_id)
-          .maybeSingle()
-      ]);
+      if (rpcError || !data) {
+        setError('This share link is invalid, has expired, or has been deactivated.');
+        setIsLoading(false);
+        return;
+      }
 
-      if (prefsRes.data) {
+      const payload = data as any;
+      const link = payload.link;
+
+      setLinkLabel(link.label);
+      setStudentUserId(link.user_id);
+      setScheduleInfo({
+        email: link.report_email,
+        date: link.report_scheduled_date,
+        sentAt: link.report_sent_at,
+      });
+
+      const prefs = payload.preferences;
+      if (prefs) {
         setStudyGoals({
-          weeklyTopicGoal: prefsRes.data.weekly_topic_goal ?? 5,
-          weeklyQuizGoal: prefsRes.data.weekly_quiz_goal ?? 3,
-          studyDaysGoal: prefsRes.data.study_days_goal ?? 5,
+          weeklyTopicGoal: prefs.weekly_topic_goal ?? 5,
+          weeklyQuizGoal: prefs.weekly_quiz_goal ?? 3,
+          studyDaysGoal: prefs.study_days_goal ?? 5,
         });
       }
 
       setStudentData({
-        topics: (topicsRes.data || []) as StudentData['topics'],
-        quizzes: (quizzesRes.data || []) as StudentData['quizzes']
+        topics: (payload.topics || []) as StudentData['topics'],
+        quizzes: (payload.quizzes || []) as StudentData['quizzes'],
       });
+
+      setGoalHistory(computeGoalHistory(payload.goal_history || []));
     } catch (err) {
       setError('Failed to load student progress.');
     } finally {
       setIsLoading(false);
     }
   };
+
 
   // Calculate weak areas (subjects with avg score < 70%)
   const getWeakAreas = (): WeakArea[] => {
