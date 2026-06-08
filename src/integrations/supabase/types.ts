@@ -429,37 +429,17 @@ export type Database = {
       }
     }
     Views: {
-      agent_ratings_public: {
-        Row: {
-          agent_id: string | null
-          created_at: string | null
-          id: string | null
-          rating: number | null
-        }
-        Insert: {
-          agent_id?: string | null
-          created_at?: string | null
-          id?: string | null
-          rating?: number | null
-        }
-        Update: {
-          agent_id?: string | null
-          created_at?: string | null
-          id?: string | null
-          rating?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agent_ratings_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "agents"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_agent_rating_aggregates: {
+        Args: { _agent_ids: string[] }
+        Returns: {
+          agent_id: string
+          avg_rating: number
+          rating_count: number
+        }[]
+      }
       get_parent_view_data: { Args: { _token: string }; Returns: Json }
     }
     Enums: {
