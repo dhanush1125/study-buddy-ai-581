@@ -13,14 +13,28 @@ serve(async (req) => {
   try {
     const { prompt, style, duration = 5 } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
+
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      console.error("Configuration error: LOVABLE_API_KEY is not set");
+      return new Response(
+        JSON.stringify({ error: "Service temporarily unavailable" }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    if (!prompt) {
-      throw new Error("Video prompt is required");
+    if (typeof prompt !== "string" || prompt.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Prompt is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+    if (prompt.length > 2000) {
+      return new Response(
+        JSON.stringify({ error: "Prompt too long (max 2000 characters)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
 
     console.log("Video generation requested with prompt:", prompt);
     console.log("Style:", style, "Duration:", duration);
@@ -110,10 +124,15 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Generate video function error:", error);
+    console.error("Generate video function error:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "An unexpected error occurred. Please try again later." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
+
 });

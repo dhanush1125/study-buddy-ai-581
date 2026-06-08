@@ -13,10 +13,35 @@ serve(async (req) => {
   try {
     const { message, image, storyMode, careerMode, videoMode } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
+
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      console.error("Configuration error: LOVABLE_API_KEY is not set");
+      return new Response(
+        JSON.stringify({ error: "Service temporarily unavailable" }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    // Input validation
+    if (typeof message !== "string") {
+      return new Response(
+        JSON.stringify({ error: "Invalid message format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (message.trim().length === 0 && !image) {
+      return new Response(
+        JSON.stringify({ error: "Message cannot be empty" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (message.length > 4000) {
+      return new Response(
+        JSON.stringify({ error: "Message too long (max 4000 characters)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
 
     const systemPrompt = `You are an AI-powered Student Learning Assistant with 🎨 ADVANCED VISUAL LEARNING MODE, 📖 STORY LEARNING MODE, EMOTION-AWARE LEARNING, and STRESS-FREE EXAM MODE.
 
@@ -720,10 +745,15 @@ ${message}`;
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (error) {
-    console.error("Chat function error:", error);
+    console.error("Chat function error:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "An unexpected error occurred. Please try again later." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
+
