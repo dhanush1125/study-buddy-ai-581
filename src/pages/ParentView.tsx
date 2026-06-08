@@ -9,7 +9,7 @@ import { GoalHistoryChart } from '@/components/GoalHistoryChart';
 import { ScheduleReportForm } from '@/components/ScheduleReportForm';
 import { ProgressComparison } from '@/components/ProgressComparison';
 import { AchievementBadges } from '@/components/AchievementBadges';
-import { useGoalHistory } from '@/hooks/useGoalHistory';
+import type { GoalHistoryData } from '@/hooks/useGoalHistory';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { generateProgressReport } from '@/utils/generateProgressReport';
