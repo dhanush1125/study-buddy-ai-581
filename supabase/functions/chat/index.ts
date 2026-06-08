@@ -745,10 +745,15 @@ ${message}`;
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (error) {
-    console.error("Chat function error:", error);
+    console.error("Chat function error:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "An unexpected error occurred. Please try again later." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
+
