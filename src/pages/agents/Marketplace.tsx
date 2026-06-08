@@ -25,14 +25,13 @@ const Marketplace = () => {
       .order("clone_count", { ascending: false }).limit(60);
     setAgents(data || []);
     if (data?.length) {
-      const { data: rs } = await supabase.from("agent_ratings")
-        .select("agent_id, rating").in("agent_id", data.map(a => a.id));
+      const { data: rs } = await supabase.rpc("get_agent_rating_aggregates", {
+        _agent_ids: data.map((a: any) => a.id),
+      });
       const agg: Record<string, { avg: number; count: number }> = {};
       (rs || []).forEach((r: any) => {
-        const a = agg[r.agent_id] || { avg: 0, count: 0 };
-        agg[r.agent_id] = { avg: a.avg + r.rating, count: a.count + 1 };
+        agg[r.agent_id] = { avg: Number(r.avg_rating), count: Number(r.rating_count) };
       });
-      Object.keys(agg).forEach(k => { agg[k].avg = agg[k].avg / agg[k].count; });
       setRatings(agg);
     }
     setLoading(false);
