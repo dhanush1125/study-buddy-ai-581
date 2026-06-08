@@ -101,7 +101,9 @@ const ParentView = () => {
   const [isExportingReport, setIsExportingReport] = useState(false);
   const [scheduleInfo, setScheduleInfo] = useState<ScheduleInfo>({ email: null, date: null, sentAt: null });
 
-  const { history: goalHistory, isLoading: historyLoading } = useGoalHistory(studentUserId || undefined);
+  const [goalHistory, setGoalHistory] = useState<GoalHistoryData[]>([]);
+  const historyLoading = false;
+
 
   useEffect(() => {
     if (token) {
