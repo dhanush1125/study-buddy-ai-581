@@ -32,6 +32,27 @@ import {
 } from 'lucide-react';
 import { format, subDays, eachDayOfInterval, isSameDay } from 'date-fns';
 
+const computeGoalHistory = (records: any[]): GoalHistoryData[] => {
+  return (records || []).map((record) => {
+    const topicsRate = record.topic_goal > 0
+      ? Math.min(100, Math.round((record.topics_completed / record.topic_goal) * 100)) : 0;
+    const quizzesRate = record.quiz_goal > 0
+      ? Math.min(100, Math.round((record.quizzes_completed / record.quiz_goal) * 100)) : 0;
+    const studyDaysRate = record.study_days_goal > 0
+      ? Math.min(100, Math.round((record.study_days / record.study_days_goal) * 100)) : 0;
+    const overallRate = Math.round((topicsRate + quizzesRate + studyDaysRate) / 3);
+    return {
+      week: record.week_start,
+      weekLabel: format(new Date(record.week_start), 'MMM d'),
+      topicsRate,
+      quizzesRate,
+      studyDaysRate,
+      overallRate,
+    };
+  });
+};
+
+
 interface StudentData {
   topics: Array<{
     id: string;
