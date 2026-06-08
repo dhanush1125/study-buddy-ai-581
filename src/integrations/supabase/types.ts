@@ -429,7 +429,35 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      agent_ratings_public: {
+        Row: {
+          agent_id: string | null
+          created_at: string | null
+          id: string | null
+          rating: number | null
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          rating?: number | null
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_ratings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_parent_view_data: { Args: { _token: string }; Returns: Json }
