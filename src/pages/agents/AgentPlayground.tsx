@@ -7,7 +7,9 @@ import type { Agent } from "@/hooks/useAgents";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Plus, Send, Trash2, MessageSquare, Square, Pencil } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { STUDY_LANGUAGES } from "@/lib/agentTemplates";
+import { Plus, Send, Trash2, MessageSquare, Square, Pencil, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
