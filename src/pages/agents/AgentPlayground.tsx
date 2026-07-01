@@ -128,6 +128,19 @@ const AgentPlayground = () => {
                 <h2 className="font-semibold">{agent.name}</h2>
                 <p className="text-xs text-muted-foreground truncate">{agent.role}</p>
               </div>
+              <div className="flex items-center gap-2">
+                <Languages className="w-4 h-4 text-muted-foreground" />
+                <Select value={language} onValueChange={updateLanguage}>
+                  <SelectTrigger className="h-9 w-[180px]">
+                    <SelectValue placeholder="Reply language" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {STUDY_LANGUAGES.map(l => (
+                      <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button variant="outline" size="sm" onClick={() => navigate(`/agents/${agentId}/edit`)}>
                 Edit
               </Button>
