@@ -67,7 +67,7 @@ const AgentPlayground = () => {
     if (!input.trim() || sending) return;
     const text = input.trim();
     setInput("");
-    await send(text);
+    await send(text, { language });
   };
 
   const newChat = async () => {
