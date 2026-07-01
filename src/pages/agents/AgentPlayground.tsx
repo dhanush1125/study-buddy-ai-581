@@ -22,6 +22,20 @@ const AgentPlayground = () => {
   const [input, setInput] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const langKey = agentId ? `agent-lang:${agentId}` : "";
+  const [language, setLanguage] = useState<string>(() => {
+    if (typeof window === "undefined" || !langKey) return "auto";
+    return localStorage.getItem(langKey) || "auto";
+  });
+  useEffect(() => {
+    if (!langKey) return;
+    setLanguage(localStorage.getItem(langKey) || "auto");
+  }, [langKey]);
+  const updateLanguage = (v: string) => {
+    setLanguage(v);
+    if (langKey) localStorage.setItem(langKey, v);
+  };
+
 
   useEffect(() => {
     if (!agentId) return;
