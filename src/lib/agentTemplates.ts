@@ -154,3 +154,29 @@ export const MODELS = [
   { id: "openai/gpt-5", name: "GPT-5" },
   { id: "openai/gpt-5-mini", name: "GPT-5 Mini" },
 ];
+
+export const STUDY_LANGUAGES = [
+  { code: "auto", label: "Auto-detect" },
+  { code: "English", label: "English" },
+  { code: "Hindi", label: "हिन्दी (Hindi)" },
+  { code: "Hinglish", label: "Hinglish" },
+  { code: "Spanish", label: "Español" },
+  { code: "French", label: "Français" },
+  { code: "German", label: "Deutsch" },
+  { code: "Portuguese", label: "Português" },
+  { code: "Arabic", label: "العربية" },
+  { code: "Chinese (Simplified)", label: "中文 (简体)" },
+  { code: "Japanese", label: "日本語" },
+  { code: "Korean", label: "한국어" },
+  { code: "Bengali", label: "বাংলা" },
+  { code: "Tamil", label: "தமிழ்" },
+  { code: "Telugu", label: "తెలుగు" },
+  { code: "Marathi", label: "मराठी" },
+  { code: "Urdu", label: "اردو" },
+  { code: "Indonesian", label: "Bahasa Indonesia" },
+  { code: "Vietnamese", label: "Tiếng Việt" },
+  { code: "Turkish", label: "Türkçe" },
+  { code: "Russian", label: "Русский" },
+  { code: "Italian", label: "Italiano" },
+];
+
