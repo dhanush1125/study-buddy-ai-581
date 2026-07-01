@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { threadId, messages } = await req.json();
+    const { threadId, messages, language } = await req.json();
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -76,7 +76,13 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model: agent.model || "google/gemini-2.5-flash",
-        messages: [{ role: "system", content: buildSystemPrompt(agent) }, ...messages],
+        messages: [
+          { role: "system", content: buildSystemPrompt(agent) },
+          ...(typeof language === "string" && language && language !== "auto"
+            ? [{ role: "system", content: `LANGUAGE OVERRIDE: The user has explicitly selected "${language}". You MUST reply in ${language} (correct script) for every message in this conversation, regardless of the language the user writes in. Ignore any auto-detection instructions.` }]
+            : []),
+          ...messages,
+        ],
         stream: true,
       }),
     });

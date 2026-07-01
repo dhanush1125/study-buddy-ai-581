@@ -7,7 +7,9 @@ import type { Agent } from "@/hooks/useAgents";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Plus, Send, Trash2, MessageSquare, Square, Pencil } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { STUDY_LANGUAGES } from "@/lib/agentTemplates";
+import { Plus, Send, Trash2, MessageSquare, Square, Pencil, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -20,6 +22,20 @@ const AgentPlayground = () => {
   const [input, setInput] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const langKey = agentId ? `agent-lang:${agentId}` : "";
+  const [language, setLanguage] = useState<string>(() => {
+    if (typeof window === "undefined" || !langKey) return "auto";
+    return localStorage.getItem(langKey) || "auto";
+  });
+  useEffect(() => {
+    if (!langKey) return;
+    setLanguage(localStorage.getItem(langKey) || "auto");
+  }, [langKey]);
+  const updateLanguage = (v: string) => {
+    setLanguage(v);
+    if (langKey) localStorage.setItem(langKey, v);
+  };
+
 
   useEffect(() => {
     if (!agentId) return;
@@ -51,7 +67,7 @@ const AgentPlayground = () => {
     if (!input.trim() || sending) return;
     const text = input.trim();
     setInput("");
-    await send(text);
+    await send(text, { language });
   };
 
   const newChat = async () => {
@@ -111,6 +127,19 @@ const AgentPlayground = () => {
               <div className="flex-1 min-w-0">
                 <h2 className="font-semibold">{agent.name}</h2>
                 <p className="text-xs text-muted-foreground truncate">{agent.role}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Languages className="w-4 h-4 text-muted-foreground" />
+                <Select value={language} onValueChange={updateLanguage}>
+                  <SelectTrigger className="h-9 w-[180px]">
+                    <SelectValue placeholder="Reply language" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {STUDY_LANGUAGES.map(l => (
+                      <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <Button variant="outline" size="sm" onClick={() => navigate(`/agents/${agentId}/edit`)}>
                 Edit

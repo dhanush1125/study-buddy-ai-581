@@ -72,7 +72,7 @@ export const useAgentChat = (threadId: string | undefined) => {
     })();
   }, [threadId]);
 
-  const send = useCallback(async (text: string) => {
+  const send = useCallback(async (text: string, opts?: { language?: string }) => {
     if (!threadId || !text.trim() || sending) return;
     const userMsg: AgentMessage = { role: "user", content: text.trim() };
     const next = [...messages, userMsg];
@@ -93,6 +93,7 @@ export const useAgentChat = (threadId: string | undefined) => {
         },
         body: JSON.stringify({
           threadId,
+          language: opts?.language,
           messages: next.map(m => ({ role: m.role, content: m.content })),
         }),
         signal: abortRef.current.signal,
