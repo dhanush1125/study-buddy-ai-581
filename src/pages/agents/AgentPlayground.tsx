@@ -176,6 +176,82 @@ const AgentPlayground = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 relative">
+                    <SlidersHorizontal className="w-4 h-4" />
+                    Filters
+                    {activeFilterCount > 0 && (
+                      <span className="ml-1 rounded-full bg-primary text-primary-foreground text-[10px] leading-none px-1.5 py-0.5">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80 space-y-3">
+                  <div>
+                    <h4 className="text-sm font-semibold">Recommendation filters</h4>
+                    <p className="text-xs text-muted-foreground">Constrain course & resource picks.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Course type</Label>
+                    <Select value={studyFilters.courseType} onValueChange={v => updateFilter("courseType", v)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {STUDY_COURSE_TYPES.map(o => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Level</Label>
+                    <Select value={studyFilters.level} onValueChange={v => updateFilter("level", v)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {STUDY_LEVELS.map(o => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Estimated time</Label>
+                    <Select value={studyFilters.timeCommitment} onValueChange={v => updateFilter("timeCommitment", v)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {STUDY_TIME_COMMITMENTS.map(o => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Budget</Label>
+                    <Select value={studyFilters.budget} onValueChange={v => updateFilter("budget", v)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {STUDY_BUDGETS.map(o => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {activeFilterCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setStudyFilters(defaultFilters);
+                        if (filtersKey) localStorage.removeItem(filtersKey);
+                      }}
+                    >
+                      Clear filters
+                    </Button>
+                  )}
+                </PopoverContent>
+              </Popover>
               <Button variant="outline" size="sm" onClick={() => navigate(`/agents/${agentId}/edit`)}>
                 Edit
               </Button>
