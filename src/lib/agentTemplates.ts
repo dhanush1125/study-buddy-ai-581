@@ -180,3 +180,39 @@ export const STUDY_LANGUAGES = [
   { code: "Italian", label: "Italiano" },
 ];
 
+export const STUDY_COURSE_TYPES = [
+  { value: "any", label: "Any type" },
+  { value: "Video course", label: "Video course" },
+  { value: "Interactive/hands-on", label: "Interactive / hands-on" },
+  { value: "Text/article/book", label: "Text / article / book" },
+  { value: "University-style lectures", label: "University lectures" },
+  { value: "Bootcamp / project-based", label: "Bootcamp / project-based" },
+  { value: "Certification prep", label: "Certification prep" },
+];
+
+export const STUDY_LEVELS = [
+  { value: "any", label: "Any level" },
+  { value: "Absolute beginner", label: "Absolute beginner" },
+  { value: "Beginner", label: "Beginner" },
+  { value: "Intermediate", label: "Intermediate" },
+  { value: "Advanced", label: "Advanced" },
+];
+
+export const STUDY_TIME_COMMITMENTS = [
+  { value: "any", label: "Any duration" },
+  { value: "Under 2 hours", label: "< 2 hours" },
+  { value: "2–10 hours", label: "2–10 hours" },
+  { value: "10–30 hours", label: "10–30 hours" },
+  { value: "30–100 hours", label: "30–100 hours" },
+  { value: "100+ hours", label: "100+ hours" },
+];
+
+export const STUDY_BUDGETS = [
+  { value: "any", label: "Any budget" },
+  { value: "Free only", label: "Free only" },
+  { value: "Free or cheap (< $30)", label: "Free or cheap (< $30)" },
+  { value: "Up to $100", label: "Up to $100" },
+  { value: "Up to $500", label: "Up to $500" },
+  { value: "No limit", label: "No limit" },
+];
+
