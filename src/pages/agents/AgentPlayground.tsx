@@ -266,6 +266,53 @@ const AgentPlayground = () => {
                     <h4 className="text-sm font-semibold">Recommendation filters</h4>
                     <p className="text-xs text-muted-foreground">Constrain course & resource picks.</p>
                   </div>
+
+                  <div className="space-y-1.5 border-b border-border/50 pb-3">
+                    <Label className="text-xs">Preset</Label>
+                    <Select
+                      value={activePresetId || "__none"}
+                      onValueChange={v => v === "__none" ? setActivePreset("") : applyPreset(v)}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="No preset" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none">No preset</SelectItem>
+                        {presets.map(p => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={saveAsPreset}>
+                        Save as new
+                      </Button>
+                      {activePreset && (
+                        <>
+                          <Button
+                            type="button" variant="outline" size="sm" className="h-7 text-xs"
+                            onClick={updateActivePreset} disabled={!isDirty}
+                          >
+                            Update
+                          </Button>
+                          <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={renameActivePreset}>
+                            Rename
+                          </Button>
+                          <Button
+                            type="button" variant="ghost" size="sm"
+                            className="h-7 text-xs text-destructive hover:text-destructive"
+                            onClick={deleteActivePreset}
+                          >
+                            Delete
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                    {activePreset && isDirty && (
+                      <p className="text-[11px] text-muted-foreground">Unsaved changes to "{activePreset.name}"</p>
+                    )}
+                  </div>
+
                   <div className="space-y-1.5">
                     <Label className="text-xs">Course type</Label>
                     <Select value={studyFilters.courseType} onValueChange={v => updateFilter("courseType", v)}>
