@@ -44,15 +44,31 @@ const AgentPlayground = () => {
     if (langKey) localStorage.setItem(langKey, v);
   };
 
-
+  const filtersKey = agentId ? `agent-study-filters:${agentId}` : "";
+  const defaultFilters = { courseType: "any", level: "any", timeCommitment: "any", budget: "any" };
+  const [studyFilters, setStudyFilters] = useState<typeof defaultFilters>(() => {
+    if (typeof window === "undefined" || !filtersKey) return defaultFilters;
+    try {
+      const raw = localStorage.getItem(filtersKey);
+      return raw ? { ...defaultFilters, ...JSON.parse(raw) } : defaultFilters;
+    } catch { return defaultFilters; }
+  });
   useEffect(() => {
-    if (!agentId) return;
-    (async () => {
-      const { data } = await supabase.from("agents").select("*").eq("id", agentId).maybeSingle();
-      if (!data) { toast.error("Agent not found"); navigate("/agents"); return; }
-      setAgent(data as any);
-    })();
-  }, [agentId, navigate]);
+    if (!filtersKey) return;
+    try {
+      const raw = localStorage.getItem(filtersKey);
+      setStudyFilters(raw ? { ...defaultFilters, ...JSON.parse(raw) } : defaultFilters);
+    } catch { setStudyFilters(defaultFilters); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersKey]);
+  const updateFilter = (key: keyof typeof defaultFilters, value: string) => {
+    setStudyFilters(prev => {
+      const nextVal = { ...prev, [key]: value };
+      if (filtersKey) localStorage.setItem(filtersKey, JSON.stringify(nextVal));
+      return nextVal;
+    });
+  };
+  const activeFilterCount = Object.values(studyFilters).filter(v => v && v !== "any").length;
 
   // If no thread in URL, create or pick one
   useEffect(() => {
