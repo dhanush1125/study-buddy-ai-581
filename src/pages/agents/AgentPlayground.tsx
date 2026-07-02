@@ -70,6 +70,79 @@ const AgentPlayground = () => {
   };
   const activeFilterCount = Object.values(studyFilters).filter(v => v && v !== "any").length;
 
+  // ---- Filter presets (per agent) ----
+  type FilterPreset = { id: string; name: string; filters: typeof defaultFilters };
+  const presetsKey = agentId ? `agent-study-presets:${agentId}` : "";
+  const activePresetKey = agentId ? `agent-study-active-preset:${agentId}` : "";
+  const [presets, setPresets] = useState<FilterPreset[]>(() => {
+    if (typeof window === "undefined" || !presetsKey) return [];
+    try { return JSON.parse(localStorage.getItem(presetsKey) || "[]"); } catch { return []; }
+  });
+  const [activePresetId, setActivePresetId] = useState<string>(() => {
+    if (typeof window === "undefined" || !activePresetKey) return "";
+    return localStorage.getItem(activePresetKey) || "";
+  });
+  useEffect(() => {
+    if (!presetsKey) return;
+    try { setPresets(JSON.parse(localStorage.getItem(presetsKey) || "[]")); } catch { setPresets([]); }
+    setActivePresetId(localStorage.getItem(activePresetKey) || "");
+  }, [presetsKey, activePresetKey]);
+  const persistPresets = (next: FilterPreset[]) => {
+    setPresets(next);
+    if (presetsKey) localStorage.setItem(presetsKey, JSON.stringify(next));
+  };
+  const setActivePreset = (id: string) => {
+    setActivePresetId(id);
+    if (activePresetKey) {
+      if (id) localStorage.setItem(activePresetKey, id);
+      else localStorage.removeItem(activePresetKey);
+    }
+  };
+  const applyPreset = (id: string) => {
+    const p = presets.find(x => x.id === id);
+    if (!p) return;
+    setStudyFilters(p.filters);
+    if (filtersKey) localStorage.setItem(filtersKey, JSON.stringify(p.filters));
+    setActivePreset(id);
+    toast.success(`Applied preset "${p.name}"`);
+  };
+  const saveAsPreset = () => {
+    const name = prompt("Preset name (e.g. 'Free beginner Python')");
+    if (!name?.trim()) return;
+    const preset: FilterPreset = {
+      id: crypto.randomUUID(), name: name.trim(), filters: { ...studyFilters },
+    };
+    persistPresets([...presets, preset]);
+    setActivePreset(preset.id);
+    toast.success(`Saved preset "${preset.name}"`);
+  };
+  const updateActivePreset = () => {
+    if (!activePresetId) return;
+    const next = presets.map(p =>
+      p.id === activePresetId ? { ...p, filters: { ...studyFilters } } : p
+    );
+    persistPresets(next);
+    toast.success("Preset updated");
+  };
+  const renameActivePreset = () => {
+    const current = presets.find(p => p.id === activePresetId);
+    if (!current) return;
+    const name = prompt("Rename preset", current.name);
+    if (!name?.trim()) return;
+    persistPresets(presets.map(p => p.id === activePresetId ? { ...p, name: name.trim() } : p));
+  };
+  const deleteActivePreset = () => {
+    const current = presets.find(p => p.id === activePresetId);
+    if (!current) return;
+    if (!confirm(`Delete preset "${current.name}"?`)) return;
+    persistPresets(presets.filter(p => p.id !== activePresetId));
+    setActivePreset("");
+  };
+  const activePreset = presets.find(p => p.id === activePresetId);
+  const isDirty = !!activePreset &&
+    JSON.stringify(activePreset.filters) !== JSON.stringify(studyFilters);
+
+
   useEffect(() => {
     if (!agentId) return;
     (async () => {
