@@ -70,6 +70,17 @@ const AgentPlayground = () => {
   };
   const activeFilterCount = Object.values(studyFilters).filter(v => v && v !== "any").length;
 
+  useEffect(() => {
+    if (!agentId) return;
+    (async () => {
+      const { data } = await supabase.from("agents").select("*").eq("id", agentId).maybeSingle();
+      if (!data) { toast.error("Agent not found"); navigate("/agents"); return; }
+      setAgent(data as any);
+    })();
+  }, [agentId, navigate]);
+
+
+
   // If no thread in URL, create or pick one
   useEffect(() => {
     if (!agentId || threadId) return;
