@@ -72,7 +72,15 @@ export const useAgentChat = (threadId: string | undefined) => {
     })();
   }, [threadId]);
 
-  const send = useCallback(async (text: string, opts?: { language?: string }) => {
+  const send = useCallback(async (text: string, opts?: {
+    language?: string;
+    studyFilters?: {
+      courseType?: string;
+      level?: string;
+      timeCommitment?: string;
+      budget?: string;
+    };
+  }) => {
     if (!threadId || !text.trim() || sending) return;
     const userMsg: AgentMessage = { role: "user", content: text.trim() };
     const next = [...messages, userMsg];
@@ -94,6 +102,7 @@ export const useAgentChat = (threadId: string | undefined) => {
         body: JSON.stringify({
           threadId,
           language: opts?.language,
+          studyFilters: opts?.studyFilters,
           messages: next.map(m => ({ role: m.role, content: m.content })),
         }),
         signal: abortRef.current.signal,

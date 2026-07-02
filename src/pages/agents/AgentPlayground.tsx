@@ -8,8 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { STUDY_LANGUAGES } from "@/lib/agentTemplates";
-import { Plus, Send, Trash2, MessageSquare, Square, Pencil, Languages } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import {
+  STUDY_LANGUAGES,
+  STUDY_COURSE_TYPES,
+  STUDY_LEVELS,
+  STUDY_TIME_COMMITMENTS,
+  STUDY_BUDGETS,
+} from "@/lib/agentTemplates";
+import { Plus, Send, Trash2, MessageSquare, Square, Pencil, Languages, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -36,6 +44,31 @@ const AgentPlayground = () => {
     if (langKey) localStorage.setItem(langKey, v);
   };
 
+  const filtersKey = agentId ? `agent-study-filters:${agentId}` : "";
+  const defaultFilters = { courseType: "any", level: "any", timeCommitment: "any", budget: "any" };
+  const [studyFilters, setStudyFilters] = useState<typeof defaultFilters>(() => {
+    if (typeof window === "undefined" || !filtersKey) return defaultFilters;
+    try {
+      const raw = localStorage.getItem(filtersKey);
+      return raw ? { ...defaultFilters, ...JSON.parse(raw) } : defaultFilters;
+    } catch { return defaultFilters; }
+  });
+  useEffect(() => {
+    if (!filtersKey) return;
+    try {
+      const raw = localStorage.getItem(filtersKey);
+      setStudyFilters(raw ? { ...defaultFilters, ...JSON.parse(raw) } : defaultFilters);
+    } catch { setStudyFilters(defaultFilters); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersKey]);
+  const updateFilter = (key: keyof typeof defaultFilters, value: string) => {
+    setStudyFilters(prev => {
+      const nextVal = { ...prev, [key]: value };
+      if (filtersKey) localStorage.setItem(filtersKey, JSON.stringify(nextVal));
+      return nextVal;
+    });
+  };
+  const activeFilterCount = Object.values(studyFilters).filter(v => v && v !== "any").length;
 
   useEffect(() => {
     if (!agentId) return;
@@ -45,6 +78,8 @@ const AgentPlayground = () => {
       setAgent(data as any);
     })();
   }, [agentId, navigate]);
+
+
 
   // If no thread in URL, create or pick one
   useEffect(() => {
@@ -67,7 +102,7 @@ const AgentPlayground = () => {
     if (!input.trim() || sending) return;
     const text = input.trim();
     setInput("");
-    await send(text, { language });
+    await send(text, { language, studyFilters });
   };
 
   const newChat = async () => {
@@ -141,6 +176,82 @@ const AgentPlayground = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 relative">
+                    <SlidersHorizontal className="w-4 h-4" />
+                    Filters
+                    {activeFilterCount > 0 && (
+                      <span className="ml-1 rounded-full bg-primary text-primary-foreground text-[10px] leading-none px-1.5 py-0.5">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80 space-y-3">
+                  <div>
+                    <h4 className="text-sm font-semibold">Recommendation filters</h4>
+                    <p className="text-xs text-muted-foreground">Constrain course & resource picks.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Course type</Label>
+                    <Select value={studyFilters.courseType} onValueChange={v => updateFilter("courseType", v)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {STUDY_COURSE_TYPES.map(o => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Level</Label>
+                    <Select value={studyFilters.level} onValueChange={v => updateFilter("level", v)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {STUDY_LEVELS.map(o => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Estimated time</Label>
+                    <Select value={studyFilters.timeCommitment} onValueChange={v => updateFilter("timeCommitment", v)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {STUDY_TIME_COMMITMENTS.map(o => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Budget</Label>
+                    <Select value={studyFilters.budget} onValueChange={v => updateFilter("budget", v)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {STUDY_BUDGETS.map(o => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {activeFilterCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setStudyFilters(defaultFilters);
+                        if (filtersKey) localStorage.removeItem(filtersKey);
+                      }}
+                    >
+                      Clear filters
+                    </Button>
+                  )}
+                </PopoverContent>
+              </Popover>
               <Button variant="outline" size="sm" onClick={() => navigate(`/agents/${agentId}/edit`)}>
                 Edit
               </Button>
