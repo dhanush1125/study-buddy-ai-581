@@ -102,7 +102,7 @@ const AgentPlayground = () => {
     if (!input.trim() || sending) return;
     const text = input.trim();
     setInput("");
-    await send(text, { language });
+    await send(text, { language, studyFilters });
   };
 
   const newChat = async () => {
