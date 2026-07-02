@@ -81,6 +81,16 @@ Deno.serve(async (req) => {
           ...(typeof language === "string" && language && language !== "auto"
             ? [{ role: "system", content: `LANGUAGE OVERRIDE: The user has explicitly selected "${language}". You MUST reply in ${language} (correct script) for every message in this conversation, regardless of the language the user writes in. Ignore any auto-detection instructions.` }]
             : []),
+          ...(studyFilters && typeof studyFilters === "object" ? (() => {
+            const parts: string[] = [];
+            const f = studyFilters as Record<string, string | undefined>;
+            if (f.courseType && f.courseType !== "any") parts.push(`- Preferred course type: ${f.courseType}`);
+            if (f.level && f.level !== "any") parts.push(`- Student level: ${f.level}`);
+            if (f.timeCommitment && f.timeCommitment !== "any") parts.push(`- Time available: ${f.timeCommitment}`);
+            if (f.budget && f.budget !== "any") parts.push(`- Budget: ${f.budget}`);
+            if (!parts.length) return [];
+            return [{ role: "system", content: `STUDY RECOMMENDATION FILTERS (hard constraints — every course/resource you recommend MUST match ALL of these, or explicitly note why no option fits):\n${parts.join("\n")}\n\nWhen recommending resources, filter out anything that violates these constraints and briefly say how each pick satisfies them. Apply these filters to the "Best pick for you" as well.` }];
+          })() : []),
           ...messages,
         ],
         stream: true,
