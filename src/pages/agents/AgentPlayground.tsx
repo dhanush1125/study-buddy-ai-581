@@ -8,8 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { STUDY_LANGUAGES } from "@/lib/agentTemplates";
-import { Plus, Send, Trash2, MessageSquare, Square, Pencil, Languages } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import {
+  STUDY_LANGUAGES,
+  STUDY_COURSE_TYPES,
+  STUDY_LEVELS,
+  STUDY_TIME_COMMITMENTS,
+  STUDY_BUDGETS,
+} from "@/lib/agentTemplates";
+import { Plus, Send, Trash2, MessageSquare, Square, Pencil, Languages, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
