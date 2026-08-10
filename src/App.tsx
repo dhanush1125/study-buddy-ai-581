@@ -38,6 +38,8 @@ const App = () => (
             <Route path="/agents/:agentId" element={<AgentPlayground />} />
             <Route path="/agents/:agentId/chat/:threadId" element={<AgentPlayground />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
