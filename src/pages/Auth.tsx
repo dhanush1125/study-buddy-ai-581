@@ -19,6 +19,9 @@ const CAPTCHA_THRESHOLD = 3; // Show CAPTCHA after this many failed attempts
 const LOCKOUT_DURATION = 60000; // 1 minute in ms
 
 const Auth = () => {
+  const [searchParams] = useSearchParams();
+  const rawNext = searchParams.get("next");
+  const nextPath = rawNext && /^\/(?!\/)/.test(rawNext) ? rawNext : "/";
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
