@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,9 @@ const CAPTCHA_THRESHOLD = 3; // Show CAPTCHA after this many failed attempts
 const LOCKOUT_DURATION = 60000; // 1 minute in ms
 
 const Auth = () => {
+  const [searchParams] = useSearchParams();
+  const rawNext = searchParams.get("next");
+  const nextPath = rawNext && /^\/(?!\/)/.test(rawNext) ? rawNext : "/";
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -56,7 +59,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate(nextPath);
     }
   }, [user, navigate]);
 
@@ -191,13 +194,13 @@ const Auth = () => {
         setCaptchaVerified(false);
         setCaptchaToken(null);
         toast.success("Welcome back!");
-        navigate("/");
+        navigate(nextPath);
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${window.location.origin}${nextPath}`,
           },
         });
 
@@ -211,7 +214,7 @@ const Auth = () => {
         }
 
         toast.success("Account created successfully!");
-        navigate("/");
+        navigate(nextPath);
       }
     } catch (error) {
       toast.error("Something went wrong. Please try again.");
@@ -226,7 +229,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${window.location.origin}${nextPath}`,
         },
       });
 

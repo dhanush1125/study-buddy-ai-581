@@ -1,0 +1,175 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://fyzrouoxrrlszkrdxteo.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "study-buddy-ai",
+      "version": "0.1.0",
+      "title": "Study Buddy AI"
+    },
+    "tools": [
+      {
+        "name": "list_agents",
+        "title": "List my AI agents",
+        "description": "List the AI agents owned by the signed-in user.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Max agents to return (default 20)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_agent",
+        "title": "Create an AI agent",
+        "description": "Create a new custom AI agent for the signed-in user.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "description": "Agent name."
+            },
+            "role": {
+              "type": "string",
+              "maxLength": 200,
+              "description": "Short role, e.g. 'Study tutor'."
+            },
+            "system_prompt": {
+              "type": "string",
+              "maxLength": 8000,
+              "description": "System instructions for the agent."
+            },
+            "personality": {
+              "type": "string",
+              "maxLength": 200,
+              "description": "Personality style, e.g. 'Friendly'."
+            },
+            "goals": {
+              "type": "string",
+              "maxLength": 2000,
+              "description": "What the agent should accomplish."
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "category": {
+              "type": "string",
+              "maxLength": 50
+            },
+            "avatar_emoji": {
+              "type": "string",
+              "maxLength": 8
+            },
+            "memory_enabled": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_study_progress",
+        "title": "Get study progress",
+        "description": "Get the signed-in student's recently completed topics and quiz attempts.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Max rows per section (default 10)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "log_completed_topic",
+        "title": "Log a completed topic",
+        "description": "Record a study topic the signed-in student has completed.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "topic_name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "subject": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "difficulty": {
+              "type": "string",
+              "enum": [
+                "easy",
+                "medium",
+                "hard"
+              ]
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 2000
+            }
+          },
+          "required": [
+            "topic_name",
+            "subject"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

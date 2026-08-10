@@ -13,7 +13,9 @@ import AgentsDashboard from "./pages/agents/AgentsDashboard";
 import CreateAgent from "./pages/agents/CreateAgent";
 import AgentPlayground from "./pages/agents/AgentPlayground";
 import Marketplace from "./pages/agents/Marketplace";
+import OAuthConsent from "./pages/OAuthConsent";
 import NotFound from "./pages/NotFound";
+
 
 const queryClient = new QueryClient();
 
@@ -36,6 +38,8 @@ const App = () => (
             <Route path="/agents/:agentId" element={<AgentPlayground />} />
             <Route path="/agents/:agentId/chat/:threadId" element={<AgentPlayground />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
