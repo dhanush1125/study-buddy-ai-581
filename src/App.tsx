@@ -13,7 +13,9 @@ import AgentsDashboard from "./pages/agents/AgentsDashboard";
 import CreateAgent from "./pages/agents/CreateAgent";
 import AgentPlayground from "./pages/agents/AgentPlayground";
 import Marketplace from "./pages/agents/Marketplace";
+import OAuthConsent from "./pages/OAuthConsent";
 import NotFound from "./pages/NotFound";
+
 
 const queryClient = new QueryClient();
 
