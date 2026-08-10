@@ -59,7 +59,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate(nextPath);
     }
   }, [user, navigate]);
 
@@ -194,13 +194,13 @@ const Auth = () => {
         setCaptchaVerified(false);
         setCaptchaToken(null);
         toast.success("Welcome back!");
-        navigate("/");
+        navigate(nextPath);
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${window.location.origin}${nextPath}`,
           },
         });
 
@@ -214,7 +214,7 @@ const Auth = () => {
         }
 
         toast.success("Account created successfully!");
-        navigate("/");
+        navigate(nextPath);
       }
     } catch (error) {
       toast.error("Something went wrong. Please try again.");
@@ -229,7 +229,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${window.location.origin}${nextPath}`,
         },
       });
 
