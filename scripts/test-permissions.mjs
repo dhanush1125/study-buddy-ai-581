@@ -67,7 +67,12 @@ async function callRpc(fn, args, token) {
 
 function isDenied({ status, body }) {
   if (status === 200) return false;
-  return DENY_MARKERS.some((m) => body.includes(m)) || status === 401 || status === 403;
+  return (
+    DENY_MARKERS.some((m) => body.includes(m)) ||
+    status === 401 ||
+    status === 403 ||
+    status === 404
+  );
 }
 
 const cases = [
