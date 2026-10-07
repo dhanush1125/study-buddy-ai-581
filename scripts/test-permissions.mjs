@@ -47,7 +47,9 @@ if (!SUPABASE_URL || !ANON_KEY) {
   process.exit(1);
 }
 
-const DENY_MARKERS = ["permission denied", "42501", "PGRST301", "not allowed"];
+// PGRST202/404 = function not exposed via RPC at all (e.g. trigger-only helpers
+// with no JSON-compatible signature) — also counts as denied for API callers.
+const DENY_MARKERS = ["permission denied", "42501", "PGRST301", "PGRST202", "not allowed"];
 
 async function callRpc(fn, args, token) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
