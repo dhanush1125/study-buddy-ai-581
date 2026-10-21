@@ -419,6 +419,13 @@ const Auth = () => {
           )}
         </div>
       </div>
+      <button
+        type="button"
+        onClick={() => navigate("/explore")}
+        className="mt-6 text-sm text-muted-foreground hover:text-primary hover:underline"
+      >
+        Just looking? Browse courses and Study Helpers as a guest →
+      </button>
     </div>
   );
 };
